@@ -38,6 +38,8 @@ export interface ShortcutEntry {
 
 export type RackEntry = AppEntry | InputEntry | ShortcutEntry;
 
+export type Region = 'Africa' | 'Asia' | 'Middle East' | 'Europe' | 'Americas & Oceania' | 'Egypt' | 'Greece & Rome';
+
 /** A museum whose collection is catalogued on Wikidata. */
 export interface ArtMuseum {
   name: string;
@@ -46,6 +48,10 @@ export interface ArtMuseum {
   wikidata: string;
   /** Minimum number of Wikipedia articles about a work, to keep only notable pieces from huge collections. */
   minSitelinks: number;
+  /** Region for works whose culture or country isn't recorded. Defaults to Europe. */
+  region?: Region;
+  /** Most works to take from this museum. Defaults to 400. */
+  limit?: number;
 }
 
 export interface ArtConfig {
@@ -56,6 +62,19 @@ export interface ArtConfig {
   museums: ArtMuseum[];
   /** Famous Egyptian tombs and pyramids, photographed inside and out. */
   egyptianTombs: boolean;
+  /** A free api.data.gov key (https://api.data.gov/signup/) to add the Smithsonian's open-access collections. */
+  smithsonianKey?: string;
+  /** A free Europeana API key (https://pro.europeana.eu/page/get-api) to add the Chester Beatty's manuscripts and prints. */
+  europeanaKey?: string;
+  /** Works from African cultures held in any museum, found through Wikidata. Defaults to true. */
+  africanCultures?: boolean;
+  /**
+   * Later end years for some regions. Traditional African and Oceanic works in museums are
+   * mostly 19th and early 20th century, so a European cut-off would leave them out. Defaults to 1920 for both.
+   */
+  regionUntil?: Partial<Record<Region, number>>;
+  /** How often each region comes up in ambient mode, relative to the others. */
+  regionWeights?: Partial<Record<Region, number>>;
   /** The Met's curated highlights from these department ids, or null to skip the Met. */
   metDepartments: number[] | null;
   /** Highlights from the Cleveland Museum of Art's open-access collection. */

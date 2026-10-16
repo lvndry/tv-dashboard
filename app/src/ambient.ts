@@ -23,9 +23,7 @@ function ambientLines(): string[] {
     const ahead = aheadPhrase(weather);
     if (ahead) lines.push(`${capitalize(ahead)}.`);
   }
-  const headlines = (settings.briefEnabled ? data.brief : null)?.stories.slice(0, 4).map(story => story.headline)
-    ?? data.stories.slice(0, 4).map(story => shorten(story.title, 70));
-  lines.push(...headlines);
+  // The screensaver is for the art: the time, the date and the weather, but no headlines.
   if (!lines.length) lines.push(zoned().hour >= 18 ? 'Bonsoir.' : 'Bonjour.');
   return lines;
 }

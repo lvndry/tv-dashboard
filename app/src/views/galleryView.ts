@@ -1,4 +1,4 @@
-import { eraOf, eras, favouriteWorks, galleryWorks, isFavourite, loadArtwork, refreshArt, toggleFavourite, type Artwork, type Era } from '../art';
+import { artReady, regions, favouriteWorks, galleryWorks, isFavourite, loadArtwork, toggleFavourite, type Artwork, type Region } from '../art';
 import { captionHtml, fillsScreen } from '../artCaption';
 import { artDetails, cachedDetails } from '../artDetails';
 import { byId, escapeHtml, toast } from '../dom';
@@ -6,7 +6,7 @@ import type { Action } from '../platform';
 import { settings, updateSettings } from '../store';
 import type { View } from './view';
 
-type Tab = { id: 'all' | 'favourites' | Era; label: string; works: Artwork[] };
+type Tab = { id: 'all' | 'favourites' | Region; label: string; works: Artwork[] };
 
 const columns = 5;
 const tileWidth = 304;
@@ -53,9 +53,9 @@ export function createGalleryView(close: () => void): View {
     const result: Tab[] = [{ id: 'all', label: 'All', works: all }];
     const favourites = favouriteWorks();
     if (favourites.length) result.push({ id: 'favourites', label: 'Favourites', works: favourites });
-    for (const era of eras) {
-      const works = all.filter(work => eraOf(work) === era.id);
-      if (works.length) result.push({ id: era.id, label: era.label, works });
+    for (const region of regions) {
+      const works = all.filter(work => work.region === region);
+      if (works.length) result.push({ id: region, label: region, works });
     }
     return result;
   }
@@ -71,7 +71,7 @@ export function createGalleryView(close: () => void): View {
     const total = galleryWorks().length;
     subtitle.textContent = total
       ? `${total.toLocaleString('en-GB')} public-domain works, from ancient Egypt to Romanticism`
-      : loading ? 'Gathering the collection from sixteen museums…' : 'The collection could not be loaded. Check Settings → Sources.';
+      : loading ? 'Gathering the collection from museums around the world…' : 'The collection could not be loaded. Check Settings → Sources.';
   }
 
   function renderGrid(): void {
@@ -247,12 +247,12 @@ export function createGalleryView(close: () => void): View {
   function enter(): void {
     if (zone === 'viewer') closeViewer();
     zone = 'grid';
+    loading = true;
     render();
-    if (!galleryWorks().length) {
-      loading = true;
-      renderSubtitle();
-      void refreshArt().finally(() => { loading = false; render(); });
-    }
+    void artReady().then(() => {
+      loading = !galleryWorks().length;
+      render();
+    });
   }
 
   return { element, render, handle, pointer, enter };

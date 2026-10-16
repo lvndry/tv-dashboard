@@ -226,6 +226,7 @@ onDataChange(() => {
   home.render();
   if (current === 'news') news.render();
   if (current === 'whatson') whatsOn.render();
+  if (current === 'gallery' && !document.getElementById('viewer')?.classList.contains('open')) gallery.render();
   if (settingsOpen) settingsView.render();
   renderDateline();
 });
