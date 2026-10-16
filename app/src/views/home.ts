@@ -4,6 +4,7 @@ import type { BriefStory } from '../brief';
 import { data, storyById } from '../data';
 import { afterPaint, byId, escapeHtml, imageHtml, shorten } from '../dom';
 import { availability, openRackEntry } from '../launcher';
+import { currentLocation } from '../location';
 import type { Story } from '../news';
 import type { Action } from '../platform';
 import { lastLaunch, settings } from '../store';
@@ -65,7 +66,7 @@ function weatherNowNote(weather: Weather): string {
   const now = weather.current;
   const sky = condition(now.code, now.isDay);
   return `
-    <div class="kicker">Now · ${escapeHtml(config.place)}</div>
+    <div class="kicker">Now · ${escapeHtml(currentLocation().name)}</div>
     <div class="big">${now.temp}°</div>
     <div class="nmeta">${sky.label} · feels like ${now.feels}°<br>Wind ${now.windSpeed} km/h from the ${windFrom(now.windDirection)}</div>
     ${hourStrip(weather)}`;

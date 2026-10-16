@@ -29,13 +29,13 @@ export const data = {
 };
 
 if (weatherCache) {
-  data.status.set('weather', { name: 'Weather · Open-Meteo', ok: null, updatedAt: weatherCache.savedAt, detail: 'from cache, refresh pending' });
+  data.status.set('weather', { name: 'Weather · Open-Meteo', ok: null, updatedAt: weatherCache.savedAt, detail: 'cached' });
 }
 for (const feed of config.news) {
-  data.status.set(`feed:${feed.id}`, { name: `${feed.name} · ${feed.section}`, ok: null, updatedAt: newsCache?.savedAt ?? null, detail: newsCache ? 'from cache, refresh pending' : 'waiting' });
+  data.status.set(`feed:${feed.id}`, { name: `${feed.name} · ${feed.section}`, ok: null, updatedAt: newsCache?.savedAt ?? null, detail: newsCache ? 'cached' : 'waiting' });
 }
 if (briefCache) {
-  data.status.set('brief', { name: `Brief · ChatGPT ${config.brief.model}`, ok: null, updatedAt: briefCache.savedAt, detail: 'from cache' });
+  data.status.set('brief', { name: `Brief · ChatGPT ${config.brief.model}`, ok: null, updatedAt: briefCache.savedAt, detail: 'cached' });
 }
 
 const listeners = new Set<() => void>();

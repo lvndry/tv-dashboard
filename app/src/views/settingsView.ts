@@ -5,6 +5,8 @@ import { briefState, data, refreshAll, refreshBrief, refreshConnection } from '.
 import { byId, escapeHtml, toast } from '../dom';
 import type { Action } from '../platform';
 import { accents, artIntervals, idleChoices, settings, updateSettings } from '../store';
+import { currentLocation, saveLocation, searchPlaces, type PlaceResult } from '../location';
+import { refreshWeather } from '../data';
 import { relativeAge } from '../time';
 import type { View } from './view';
 
@@ -33,6 +35,70 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
   let index = 0;
   let disconnectArmedUntil = 0;
   let pairing: { controller: AbortController; code: DeviceCode | null; timer: ReturnType<typeof setInterval> } | null = null;
+  const locationInput = byId<HTMLInputElement>('location-input');
+  const locationResults = byId('location-results');
+  let locationOpen = false;
+  let places: (PlaceResult | null)[] = [];
+  let placeIndex = -1;
+  let searchTimer: ReturnType<typeof setTimeout> | undefined;
+  let searchRequest = 0;
+
+  function renderPlaces(): void {
+    locationResults.innerHTML = places.map((place, position) => `
+      <div class="location-result${position === placeIndex ? ' on' : ''}" data-focus="place" data-index="${position}">
+        <b>${escapeHtml(place ? place.name : `Back to the default: ${config.place}`)}</b>
+        <span>${escapeHtml(place ? place.detail : 'From app/config.ts')}</span>
+      </div>`).join('');
+  }
+
+  async function search(query: string): Promise<void> {
+    const request = ++searchRequest;
+    if (query.trim().length < 2) {
+      places = settings.location ? [null] : [];
+      placeIndex = -1;
+      renderPlaces();
+      return;
+    }
+    try {
+      const found = await searchPlaces(query);
+      if (request !== searchRequest) return;
+      places = found.length ? found : [];
+      if (!found.length) locationResults.innerHTML = '<div class="nmeta">No match. Try a town, an arrondissement such as "Paris 15", or a postcode.</div>';
+      else renderPlaces();
+    } catch (error) {
+      if (request === searchRequest) locationResults.innerHTML = `<div class="nmeta">Search failed: ${escapeHtml(message(error))}</div>`;
+    }
+  }
+
+  function openLocation(): void {
+    locationOpen = true;
+    element.classList.add('location-open');
+    locationInput.value = '';
+    places = settings.location ? [null] : [];
+    placeIndex = -1;
+    renderPlaces();
+    locationInput.focus();
+  }
+
+  function closeLocation(): void {
+    locationOpen = false;
+    clearTimeout(searchTimer);
+    locationInput.blur();
+    element.classList.remove('location-open');
+    render();
+  }
+
+  function choosePlace(place: PlaceResult | null): void {
+    saveLocation(place);
+    toast(`Weather now for ${currentLocation().name}`);
+    closeLocation();
+    void refreshWeather();
+  }
+
+  locationInput.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => void search(locationInput.value), 350);
+  });
 
   function renderPairing(): void {
     element.classList.toggle('pairing-open', !!pairing);
@@ -112,6 +178,12 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
       change: step => updateSettings({ idleMinutes: cycle(idleChoices, settings.idleMinutes, step) }),
     },
     {
+      label: 'Weather location',
+      value: () => escapeHtml(currentLocation().name),
+      activate: () => openLocation(),
+      note: () => settings.location ? 'Set on this TV.' : 'From app/config.ts. OK to search for yours.',
+    },
+    {
       label: 'Ambient style',
       value: () => settings.ambientStyle === 'art' ? 'Art' : 'Clock',
       change: () => updateSettings({ ambientStyle: settings.ambientStyle === 'art' ? 'clock' : 'art' }),
@@ -122,6 +194,12 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
       value: () => settings.artSeconds < 60 ? `${settings.artSeconds} s` : `${settings.artSeconds / 60} min`,
       change: step => updateSettings({ artSeconds: cycle(artIntervals, settings.artSeconds, step) }),
       note: () => 'In ambient mode and the gallery slideshow.',
+    },
+    {
+      label: 'Gallery slideshow',
+      value: () => settings.slideshow ? 'On' : 'Off',
+      change: () => updateSettings({ slideshow: !settings.slideshow }),
+      note: () => 'Advance by itself in the gallery viewer. ▼ in the viewer toggles it too.',
     },
     {
       label: 'Highlighter',
@@ -150,6 +228,15 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
     },
   ];
 
+  const panel = rowsNode.parentElement!;
+
+  /** Keeps the focused row in view; ▼ on the last row reveals the source status below. */
+  function followFocus(showStatus = false): void {
+    if (showStatus) { panel.scrollTo({ top: panel.scrollHeight, behavior: 'smooth' }); return; }
+    rowsNode.children[index]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (index === 0) panel.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   function renderRows(): void {
     rowsNode.innerHTML = rows.map((row, rowIndex) => `
       <div class="srow${rowIndex === index ? ' on' : ''}" data-focus="setting" data-index="${rowIndex}">
@@ -177,6 +264,18 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
   }
 
   function handle(action: Action): boolean {
+    if (locationOpen) {
+      if (action === 'back') closeLocation();
+      else if (action === 'down' && placeIndex < places.length - 1) { placeIndex++; locationInput.blur(); renderPlaces(); }
+      else if (action === 'up') {
+        if (placeIndex > 0) { placeIndex--; renderPlaces(); }
+        else { placeIndex = -1; renderPlaces(); locationInput.focus(); }
+      } else if (action === 'ok') {
+        if (placeIndex >= 0) choosePlace(places[placeIndex] ?? null);
+        else { clearTimeout(searchTimer); void search(locationInput.value).then(() => { if (places.length) { placeIndex = 0; locationInput.blur(); renderPlaces(); } }); }
+      }
+      return true;
+    }
     if (pairing) {
       if (action === 'back' || action === 'blue') stopPairing();
       return true;
@@ -184,20 +283,23 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
     const row = rows[index];
     if (action === 'up' && index > 0) index--;
     else if (action === 'down' && index < rows.length - 1) index++;
+    else if (action === 'down') { followFocus(true); return true; }
     else if ((action === 'left' || action === 'right') && row?.change) { row.change(action === 'left' ? -1 : 1); onChange(); }
     else if (action === 'ok' && row) {
       if (row.activate) row.activate();
       else if (row.change) { row.change(1); onChange(); }
     } else if (action === 'back' || action === 'blue') { close(); return true; }
     renderRows();
+    followFocus();
     return true;
   }
 
   function pointer(target: HTMLElement): void {
-    if (pairing || target.dataset.focus !== 'setting') return;
+    if (locationOpen && target.dataset.focus === 'place') { placeIndex = Number(target.dataset.index); renderPlaces(); return; }
+    if (pairing || locationOpen || target.dataset.focus !== 'setting') return;
     index = Number(target.dataset.index);
     renderRows();
   }
 
-  return { element, render, handle, pointer, enter: () => { index = 0; disconnectArmedUntil = 0; render(); } };
+  return { element, render, handle, pointer, enter: () => { index = 0; disconnectArmedUntil = 0; render(); panel.scrollTop = 0; } };
 }
