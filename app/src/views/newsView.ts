@@ -61,8 +61,8 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
     const tab = tabs[tabIndex];
     if (tab?.id === 'brief') {
       subtitle.textContent = data.briefLoading && !data.brief
-        ? `Claude is reading ${Math.min(40, data.stories.length)} headlines…`
-        : `Written ${data.briefAt ? `at ${timeLabel(data.briefAt)}` : ''} by Claude from ${sources} sources${data.briefLoading ? ' · updating…' : ''}`;
+        ? `ChatGPT is reading ${Math.min(40, data.stories.length)} headlines…`
+        : `Written ${data.briefAt ? `at ${timeLabel(data.briefAt)}` : ''} by ChatGPT from ${sources} sources${data.briefLoading ? ' · updating…' : ''}`;
     } else {
       subtitle.textContent = data.newsAt ? `Newest first · ${sources} sources · updated ${relativeAge(data.newsAt)}` : 'Fetching the feeds…';
     }
