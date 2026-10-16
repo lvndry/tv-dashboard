@@ -60,6 +60,8 @@ export interface ArtConfig {
   metDepartments: number[] | null;
   /** Highlights from the Cleveland Museum of Art's open-access collection. */
   cleveland: boolean;
+  /** ChatGPT model that tells each work's story in the gallery; a small, cheap one is plenty. Defaults to gpt-6-luna. */
+  storyModel?: string;
 }
 
 export interface SportsConfig {

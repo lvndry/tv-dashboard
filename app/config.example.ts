@@ -75,6 +75,7 @@ export const config = defineConfig({
     // Ancient Near East, Africa/Oceania/Americas, Asia, Egypt, European paintings and sculpture, Greek and Roman, Islamic, Medieval.
     metDepartments: [3, 5, 6, 10, 11, 12, 13, 14, 17],
     cleveland: true,
+    storyModel: 'gpt-6-luna',
   },
 
   brief: {
