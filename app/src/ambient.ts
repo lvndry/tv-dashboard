@@ -41,11 +41,7 @@ function showArtwork(work: LoadedArtwork): void {
   const incoming = frames[1 - frontFrame]!;
   const outgoing = frames[frontFrame]!;
   const url = escapeHtml(work.image);
-  const panX = Math.round(Math.random() * 6 - 3);
-  const panY = Math.round(Math.random() * 4 - 2);
   incoming.className = `art-frame ${fillsScreen(work.width, work.height) ? 'fill' : 'framed'}`;
-  incoming.style.setProperty('--pan-x', `${panX}%`);
-  incoming.style.setProperty('--pan-y', `${panY}%`);
   incoming.style.setProperty('--art-duration', `${settings.artSeconds + 10}s`);
   incoming.innerHTML = `<img class="art-backdrop" src="${escapeHtml(work.thumb || work.image)}" alt=""><img class="art-image" src="${url}" alt="">`;
   void incoming.offsetWidth;
@@ -119,11 +115,14 @@ export function startAmbient(): void {
       line.classList.remove('out');
     }, 1200);
   }, 14000);
-  driftTimer = setInterval(() => {
-    const x = Math.round(Math.random() * 160 - 80);
-    const y = Math.round(Math.random() * 120 - 60);
-    drift.style.transform = `translate(${x}px, ${y}px)`;
-  }, 45000);
+  drift.style.transform = '';
+  if (config.burnInShift) {
+    driftTimer = setInterval(() => {
+      const x = Math.round(Math.random() * 160 - 80);
+      const y = Math.round(Math.random() * 120 - 60);
+      drift.style.transform = `translate(${x}px, ${y}px)`;
+    }, 45000);
+  }
   artSession++;
   if (settings.ambientStyle === 'art') void startArt(artSession);
 }

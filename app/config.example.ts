@@ -58,6 +58,8 @@ export const config = defineConfig({
     teams: ['Paris Saint-Germain'],
   },
   parisEvents: true,
+  // Turn on for OLED TVs: nudges the screensaver clock every 45 s against burn-in.
+  burnInShift: false,
 
   // Ambient mode shows public-domain art, from ancient Egypt to Romanticism.
   art: {
