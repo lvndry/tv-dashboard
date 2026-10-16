@@ -193,7 +193,7 @@ async function guideStory(work: Artwork, text: string, facts: ArtDetails['facts'
   const input = JSON.stringify(hasSource
     ? { title: work.title, maker: work.maker, date: work.date, museum: work.place, source: text.slice(0, 3000) }
     : { title: work.title, maker: work.maker, date: work.date, museum: work.place, facts });
-  const reply = await completeJson({ model: config.brief.model, instructions: hasSource ? storyInstructions : contextInstructions, input, schema: storySchema });
+  const reply = await completeJson({ model: config.art.storyModel ?? 'gpt-6-luna', instructions: hasSource ? storyInstructions : contextInstructions, input, schema: storySchema });
   const story = (JSON.parse(reply.trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, '')) as { story?: unknown }).story;
   return typeof story === 'string' && story.trim() ? story.trim() : null;
 }
