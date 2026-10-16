@@ -1,9 +1,10 @@
 import { config } from '../../config';
 import { deviceVerificationUrl, disconnect, pairDevice, type DeviceCode } from '../chatgpt';
+import { refreshArt } from '../art';
 import { briefState, data, refreshAll, refreshBrief, refreshConnection } from '../data';
 import { byId, escapeHtml, toast } from '../dom';
 import type { Action } from '../platform';
-import { accents, idleChoices, settings, updateSettings } from '../store';
+import { accents, artIntervals, idleChoices, settings, updateSettings } from '../store';
 import { relativeAge } from '../time';
 import type { View } from './view';
 
@@ -111,6 +112,17 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
       change: step => updateSettings({ idleMinutes: cycle(idleChoices, settings.idleMinutes, step) }),
     },
     {
+      label: 'Ambient style',
+      value: () => settings.ambientStyle === 'art' ? 'Art' : 'Clock',
+      change: () => updateSettings({ ambientStyle: settings.ambientStyle === 'art' ? 'clock' : 'art' }),
+      note: () => settings.ambientStyle === 'art' ? 'Public-domain art, from ancient Egypt to Romanticism.' : 'A large clock and a line about your day.',
+    },
+    {
+      label: 'New artwork every',
+      value: () => `${settings.artMinutes} min`,
+      change: step => updateSettings({ artMinutes: cycle(artIntervals, settings.artMinutes, step) }),
+    },
+    {
       label: 'Highlighter',
       value: () => `<span class="swatch" style="background:${settings.accent}"></span>${accents.find(accent => accent.value === settings.accent)?.name ?? 'Custom'}`,
       change: step => updateSettings({ accent: cycle(accents.map(accent => accent.value), settings.accent, step) }),
@@ -130,6 +142,7 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
       value: () => '',
       activate: () => {
         refreshAll();
+        void refreshArt(true);
         if (briefState() === 'ready' || briefState() === 'error') void refreshBrief(true);
         toast('Refreshing weather and news…');
       },

@@ -24,6 +24,6 @@ export async function fetchText(url: string, timeoutMs = 15000): Promise<string>
   return response.text();
 }
 
-export async function fetchJson<T>(url: string): Promise<T> {
-  return JSON.parse(await fetchText(url)) as T;
+export async function fetchJson<T>(url: string, timeoutMs = 15000): Promise<T> {
+  return JSON.parse(await fetchText(url, timeoutMs)) as T;
 }

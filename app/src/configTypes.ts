@@ -38,6 +38,28 @@ export interface ShortcutEntry {
 
 export type RackEntry = AppEntry | InputEntry | ShortcutEntry;
 
+/** A museum whose collection is catalogued on Wikidata. */
+export interface ArtMuseum {
+  name: string;
+  city: string;
+  /** Wikidata id of the museum, for example Q19675 for the Louvre. */
+  wikidata: string;
+  /** Minimum number of Wikipedia articles about a work, to keep only notable pieces from huge collections. */
+  minSitelinks: number;
+}
+
+export interface ArtConfig {
+  /** Latest year shown; 1850 stops at Romanticism. */
+  until: number;
+  museums: ArtMuseum[];
+  /** Famous Egyptian tombs and pyramids, photographed inside and out. */
+  egyptianTombs: boolean;
+  /** The Met's curated highlights from these department ids, or null to skip the Met. */
+  metDepartments: number[] | null;
+  /** Highlights from the Cleveland Museum of Art's open-access collection. */
+  cleveland: boolean;
+}
+
 export interface Config {
   /** Used in the greeting ("Bonsoir, Sam."). Leave empty for a plain "Bonsoir." */
   name: string;
@@ -50,6 +72,8 @@ export interface Config {
   /** Left to right along the bottom of the home screen. */
   rack: RackEntry[];
   news: NewsFeed[];
+  /** Ambient mode shows public-domain art from these collections. */
+  art: ArtConfig;
   brief: {
     /** ChatGPT model used once the TV is connected in Settings. */
     model: string;
