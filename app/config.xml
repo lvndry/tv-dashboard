@@ -2,11 +2,17 @@
 <widget xmlns="http://www.w3.org/ns/widgets"
         xmlns:tizen="http://tizen.org/ns/widgets"
         id="https://github.com/lvndry/tv-dashboard"
-        version="1.1.0"
+        version="1.2.1"
         viewmodes="maximized">
   <content src="index.html"/>
   <access origin="*" subdomains="true"/>
   <feature name="http://tizen.org/feature/screen.size.all"/>
+  <feature name="http://tizen.org/feature/web.service"/>
+  <tizen:service id="BonsoirTV1.BonsoirService" auto-restart="true" on-boot="true">
+    <tizen:content src="service/service.js"/>
+    <tizen:name>BonsoirService</tizen:name>
+    <tizen:description>Launches the Bonsoir UI at boot.</tizen:description>
+  </tizen:service>
   <tizen:application id="BonsoirTV1.Bonsoir" package="BonsoirTV1" exec="index.html" required_version="4.0"/>
   <tizen:profile name="tv-samsung"/>
   <tizen:privilege name="http://tizen.org/privilege/internet"/>

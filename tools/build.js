@@ -42,7 +42,8 @@ export function stageStatic(target = dist) {
   writeFileSync(join(target, 'index.html'), html);
   const widget = readFileSync(join(app, 'config.xml'), 'utf8').replace('<!--CSP-->', `<tizen:content-security-policy>${policy}</tizen:content-security-policy>`);
   writeFileSync(join(target, 'config.xml'), widget);
-  cpSync(join(app, 'fonts'), join(target, 'fonts'), { recursive: true });
+    cpSync(join(app, 'fonts'), join(target, 'fonts'), { recursive: true });
+  cpSync(join(app, 'service'), join(target, 'service'), { recursive: true });
 }
 
 export function buildOptions(target = dist) {
