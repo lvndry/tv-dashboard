@@ -22,6 +22,7 @@ export const config = defineConfig({
     { kind: 'app', id: 'youtube', name: 'YouTube', dot: '#FF4E45', match: ['youtube'], appId: '111299001912' },
     { kind: 'input', id: 'ps5', name: 'PS5', dot: '#3D7BFF' },
     { kind: 'shortcut', id: 'news', name: 'News', dot: '#F2DE6B', target: 'news' },
+    { kind: 'shortcut', id: 'gallery', name: 'Gallery', dot: '#C9A66B', target: 'gallery' },
     { kind: 'shortcut', id: 'settings', name: 'Settings', dot: '#9C9584', target: 'settings' },
   ],
 
@@ -38,6 +39,7 @@ export const config = defineConfig({
 
   // Ambient mode shows public-domain art, from ancient Egypt to Romanticism.
   art: {
+    from: -3500,
     until: 1850,
     museums: [
       { name: 'Louvre', city: 'Paris', wikidata: 'Q19675', minSitelinks: 4 },

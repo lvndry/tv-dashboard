@@ -137,6 +137,7 @@ function allNewsNote(): string {
 
 const shortcutDetail = {
   news: 'Every headline, by section, with the ChatGPT brief when it’s connected.',
+  gallery: 'About 2,800 public-domain works, from ancient Egypt to Romanticism. Favourites come up more often in ambient mode.',
   settings: 'ChatGPT, ambient mode, highlighter colour, clock and console input.',
 };
 
