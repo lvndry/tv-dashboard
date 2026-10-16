@@ -62,6 +62,8 @@ export interface ArtConfig {
   museums: ArtMuseum[];
   /** Famous Egyptian tombs and pyramids, photographed inside and out. */
   egyptianTombs: boolean;
+  /** A free api.data.gov key (https://api.data.gov/signup/) to add the Smithsonian's open-access collections. */
+  smithsonianKey?: string;
   /** Works from African cultures held in any museum, found through Wikidata. Defaults to true. */
   africanCultures?: boolean;
   /**

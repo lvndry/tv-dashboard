@@ -37,8 +37,8 @@ export interface Artwork {
 interface SourceState {
   savedAt: number;
   works: Artwork[];
-  /** Met object ids, resolved only when one is about to be shown. */
-  metIds?: number[];
+  /** Object ids ("met:123", "louvre:cl010277627"), resolved only when one is about to be shown. */
+  lazyIds?: string[];
   region?: Region;
   group?: string;
 }
@@ -281,10 +281,61 @@ async function metWork(id: number, region: Region): Promise<Artwork | null> {
     year: object.objectBeginDate, place: 'The Met, New York', image: object.primaryImage,
     thumb: object.primaryImageSmall || object.primaryImage, group: 'The Met', region,
   };
-  if (!metWorks.some(known => known.id === work.id)) {
-    metWorks.push(work);
-    void writeBig('art-met-works', metWorks);
-  }
+  keepResolved(work);
+  return work;
+}
+
+/** Met and Louvre works fetched for display are kept so the gallery can show them without refetching. */
+function keepResolved(work: Artwork): void {
+  if (metWorks.some(known => known.id === work.id)) return;
+  metWorks.push(work);
+  void writeBig('art-met-works', metWorks);
+}
+
+const louvreDepartments: { qid: string; region: Region; name: string }[] = [
+  { qid: 'Q3044749', region: 'Egypt', name: 'Egyptian Antiquities' },
+  { qid: 'Q3044751', region: 'Middle East', name: 'Near Eastern Antiquities' },
+  { qid: 'Q3044747', region: 'Greece & Rome', name: 'Greek, Etruscan and Roman Antiquities' },
+  { qid: 'Q3044748', region: 'Middle East', name: 'Islamic Arts' },
+  { qid: 'Q3044768', region: 'Europe', name: 'Paintings' },
+  { qid: 'Q3044772', region: 'Europe', name: 'Sculptures' },
+  { qid: 'Q3044767', region: 'Europe', name: 'Decorative Arts' },
+];
+
+/** A random sample of a Louvre department's lesser-known objects; the Wikidata museum source already covers the famous ones. */
+async function louvreDepartmentIds(department: { qid: string }): Promise<string[]> {
+  const seed = Math.random().toString(36).slice(2, 8);
+  const rows = await sparql(`SELECT ?ark WHERE {
+    ?item wdt:P9394 ?ark; wdt:P195 wd:${department.qid}; wikibase:sitelinks 0 .
+  } ORDER BY MD5(CONCAT(STR(?item), "${seed}")) LIMIT 500`);
+  return rows.flatMap(row => row.ark?.value ? [`louvre:cl${row.ark.value}`] : []);
+}
+
+interface LouvreRecord {
+  title?: string;
+  dateCreated?: { startYear?: number; endYear?: number }[];
+  creator?: { label?: string }[];
+  image?: { urlImage?: string; urlThumbnail?: string }[];
+}
+
+async function louvreWork(ark: string, region: Region, group: string): Promise<Artwork | null> {
+  const record = await fetchJson<LouvreRecord>(`https://collections.louvre.fr/ark:/53355/${ark}.json`);
+  const image = record.image?.find(item => item.urlImage);
+  const year = record.dateCreated?.find(date => typeof date.startYear === 'number')?.startYear ?? null;
+  if (!image?.urlImage || !record.title || (year !== null && (year > untilFor(region) || year < config.art.from))) return null;
+  const work: Artwork = {
+    id: `louvre:${ark}`,
+    title: record.title.charAt(0).toUpperCase() + record.title.slice(1),
+    maker: readableLabel(record.creator?.[0]?.label?.replace(/\s*\(.*\)\s*$/, '')),
+    date: year === null ? '' : yearLabel(year),
+    year,
+    place: 'Louvre, Paris',
+    image: image.urlImage,
+    thumb: image.urlThumbnail ?? image.urlImage,
+    group,
+    region,
+  };
+  keepResolved(work);
   return work;
 }
 
@@ -319,6 +370,56 @@ async function clevelandDepartment(department: { name: string; region: Region })
   });
 }
 
+/** Smithsonian open-access collections and the region each stands for. */
+const smithsonianCollections: { key: string; query: string; region: Region; group: string; place: string }[] = [
+  { key: 'NMAA', query: 'unit_code:NMAA', region: 'Asia', group: 'Smithsonian Asian Art', place: 'National Museum of Asian Art, Washington' },
+  { key: 'NMAfA', query: 'unit_code:NMAfA', region: 'Africa', group: 'Smithsonian African Art', place: 'National Museum of African Art, Washington' },
+];
+
+interface SmithsonianRow {
+  id: string;
+  title?: string;
+  content?: {
+    descriptiveNonRepeating?: { metadata_usage?: { access?: string }; online_media?: { media?: { content?: string; usage?: { access?: string } }[] } };
+    freetext?: { name?: { content?: string }[]; date?: { content?: string }[] };
+    indexedStructured?: { geoLocation?: { L2?: { content?: string } }[] };
+  };
+}
+
+/** A random slice of public-domain works with images from one Smithsonian collection. */
+async function smithsonianWorks(collection: typeof smithsonianCollections[number]): Promise<Artwork[]> {
+  const key = config.art.smithsonianKey!;
+  const base = 'https://api.si.edu/openaccess/api/v1.0/search';
+  const query = `${collection.query} AND online_media_type:"Images"`;
+  const url = (start: number, rows: number): string => `${base}?q=${encodeURIComponent(query)}&start=${start}&rows=${rows}&api_key=${encodeURIComponent(key)}`;
+  const first = await fetchJson<{ response: { rowCount: number } }>(url(0, 1), 30000);
+  const size = Math.min(first.response.rowCount, 400);
+  const start = first.response.rowCount > size ? Math.floor(Math.random() * (first.response.rowCount - size)) : 0;
+  const page = await fetchJson<{ response: { rows: SmithsonianRow[] } }>(url(start, size), 60000);
+  const until = untilFor(collection.region);
+  return page.response.rows.flatMap(row => {
+    const media = row.content?.descriptiveNonRepeating?.online_media?.media?.find(item => item.content && item.usage?.access === 'CC0');
+    if (!media?.content || row.content?.descriptiveNonRepeating?.metadata_usage?.access !== 'CC0' || !row.title) return [];
+    const date = row.content.freetext?.date?.[0]?.content ?? '';
+    const year = yearFrom(date);
+    if (year !== null && (year > until || year < config.art.from)) return [];
+    const countries = (row.content.indexedStructured?.geoLocation ?? []).map(place => place.L2?.content ?? '').filter(Boolean);
+    const region = regionOf([], [], year, collection.region, countries);
+    return [{
+      id: `si:${row.id}`,
+      title: cleanTitle(row.title),
+      maker: (row.content.freetext?.name?.[0]?.content ?? '').replace(/\s*\(.*\)\s*$/, '') || countries[0] || '',
+      date,
+      year,
+      place: collection.place,
+      image: `${media.content}&max=1920`,
+      thumb: `${media.content}&max=480`,
+      group: collection.group,
+      region,
+    }];
+  });
+}
+
 function sources(): Source[] {
   const art = config.art;
   const list: Source[] = art.museums.map(museum => ({
@@ -333,8 +434,20 @@ function sources(): Source[] {
       list.push({
         key: `met:${department.id}:${department.region}`,
         label: `The Met · ${department.region}`,
-        load: async () => ({ savedAt: Date.now(), works: [], metIds: await metDepartmentIds(department), region: department.region, group: 'The Met' }),
+        load: async () => ({ savedAt: Date.now(), works: [], lazyIds: (await metDepartmentIds(department)).map(id => `met:${id}`), region: department.region, group: 'The Met' }),
       });
+    }
+  }
+  for (const department of louvreDepartments) {
+    list.push({
+      key: `louvre:${department.qid}`,
+      label: `Louvre · ${department.name}`,
+      load: async () => ({ savedAt: Date.now(), works: [], lazyIds: await louvreDepartmentIds(department), region: department.region, group: `Louvre · ${department.name}` }),
+    });
+  }
+  if (art.smithsonianKey) {
+    for (const collection of smithsonianCollections) {
+      list.push({ key: `si:${collection.key}`, label: `Smithsonian · ${collection.group}`, load: async () => ({ savedAt: Date.now(), works: await smithsonianWorks(collection) }) });
     }
   }
   if (art.cleveland) {
@@ -365,13 +478,13 @@ function loadCached(): Promise<void> {
 
 function reportCollection(failures: string[]): void {
   const works = galleryWorks();
-  const metIds = [...states.values()].reduce((total, state) => total + (state.metIds?.length ?? 0), 0);
+  const lazyCount = [...states.values()].reduce((total, state) => total + (state.lazyIds?.length ?? 0), 0);
   const counts = regions.map(region => `${region} ${works.filter(work => work.region === region).length}`).join(', ');
   reportStatus('art', {
     name: 'Art collection',
     ok: failures.length < sources().length,
     updatedAt: Date.now(),
-    detail: `${works.length} works and ${metIds} Met objects (${counts})${failures.length ? `; ${failures.length} sources failed: ${failures.slice(0, 3).join(', ')}` : ''}`,
+    detail: `${works.length} works and ${lazyCount} Met and Louvre objects (${counts})${failures.length ? `; ${failures.length} sources failed: ${failures.slice(0, 3).join(', ')}` : ''}`,
   });
 }
 
@@ -436,9 +549,11 @@ export function galleryWorks(): Artwork[] {
 }
 
 /** Ready-to-show works and unresolved Met ids, grouped by region and then by collection. */
-function candidatesByRegion(): Map<Region, Map<string, (Artwork | { metId: number; region: Region })[]>> {
-  const byRegion = new Map<Region, Map<string, (Artwork | { metId: number; region: Region })[]>>();
-  const add = (region: Region, group: string, entry: Artwork | { metId: number; region: Region }): void => {
+type Lazy = { lazyId: string; region: Region; group: string };
+
+function candidatesByRegion(): Map<Region, Map<string, (Artwork | Lazy)[]>> {
+  const byRegion = new Map<Region, Map<string, (Artwork | Lazy)[]>>();
+  const add = (region: Region, group: string, entry: Artwork | Lazy): void => {
     const groups = byRegion.get(region) ?? new Map();
     const list = groups.get(group) ?? [];
     list.push(entry);
@@ -447,8 +562,8 @@ function candidatesByRegion(): Map<Region, Map<string, (Artwork | { metId: numbe
   };
   for (const work of galleryWorks()) if (!recent.includes(work.id)) add(work.region, work.group, work);
   for (const state of states.values()) {
-    if (!state.metIds || !state.region) continue;
-    for (const metId of state.metIds) if (!recent.includes(`met:${metId}`)) add(state.region, 'The Met', { metId, region: state.region });
+    if (!state.lazyIds || !state.region) continue;
+    for (const lazyId of state.lazyIds) if (!recent.includes(lazyId)) add(state.region, state.group ?? 'Collections', { lazyId, region: state.region, group: state.group ?? 'Collections' });
   }
   return byRegion;
 }
@@ -470,9 +585,11 @@ async function candidate(): Promise<Artwork | null> {
   const groups = byRegion.get(region)!;
   const entry = pickRandom(groups.get(pickRandom([...groups.keys()])!) ?? []);
   if (!entry) return null;
-  if ('metId' in entry) {
-    recent.push(`met:${entry.metId}`);
-    return metWork(entry.metId, entry.region).catch(() => null);
+  if ('lazyId' in entry) {
+    recent.push(entry.lazyId);
+    const [kind, id] = entry.lazyId.split(':') as [string, string];
+    const resolve = kind === 'met' ? metWork(Number(id), entry.region) : louvreWork(id, entry.region, entry.group);
+    return resolve.catch(() => null);
   }
   return entry;
 }
@@ -503,7 +620,7 @@ export async function artReady(): Promise<void> {
 /** An artwork whose image is already downloaded, or null when nothing loads. */
 export async function nextArtwork(attempts = 6): Promise<LoadedArtwork | null> {
   await artReady();
-  if (!galleryWorks().length && ![...states.values()].some(state => state.metIds?.length)) await refreshing;
+  if (!galleryWorks().length && ![...states.values()].some(state => state.lazyIds?.length)) await refreshing;
   for (let attempt = 0; attempt < attempts; attempt++) {
     const work = await candidate();
     if (!work) return null;

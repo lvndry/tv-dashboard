@@ -144,11 +144,26 @@ async function clevelandMaterial(id: string): Promise<SourceMaterial> {
   return { text, textSource: text ? 'museum' : '', facts };
 }
 
+interface LouvreDetails { description?: string; historicalContext?: string; objectHistory?: string; materialsAndTechniques?: string; dimension?: { displayDimension?: string; type?: string }[]; room?: string }
+
+/** Louvre records are in French; the guide story is written in the configured language from them. */
+async function louvreMaterial(id: string): Promise<SourceMaterial> {
+  const record = await fetchJson<LouvreDetails>(`https://collections.louvre.fr/ark:/53355/${id}.json`);
+  const text = [record.description, record.historicalContext, record.objectHistory].filter(Boolean).map(part => stripHtml(part!)).join('\n');
+  const facts = [
+    { label: 'Material', value: record.materialsAndTechniques ?? '' },
+    { label: 'Size', value: (record.dimension ?? []).slice(0, 2).map(item => `${item.type ?? ''} ${item.displayDimension ?? ''}`.trim()).join(', ') },
+    { label: 'Room', value: record.room ?? '' },
+  ].filter(fact => fact.value);
+  return { text, textSource: text ? 'museum' : '', facts };
+}
+
 async function sourceMaterial(work: Artwork): Promise<SourceMaterial> {
   const [source, id] = work.id.split(':') as [string, string];
   if (source === 'wd') return wikidataMaterial(id);
   if (source === 'met') return metMaterial(id);
   if (source === 'cma') return clevelandMaterial(id);
+  if (source === 'louvre') return louvreMaterial(id);
   return { text: '', textSource: '', facts: [] };
 }
 
