@@ -1,7 +1,7 @@
 import { config } from '../config';
 import { nextArtwork, type LoadedArtwork } from './art';
 import { captionHtml, fillsScreen } from './artCaption';
-import { artDetails } from './artDetails';
+import { artDetails, cachedDetails } from './artDetails';
 import { data } from './data';
 import { shortPlace } from './location';
 import { byId, escapeHtml, shorten } from './dom';
@@ -59,7 +59,7 @@ function showArtwork(work: LoadedArtwork): void {
   caption.classList.add('out');
   caption.dataset.work = work.id;
   setTimeout(() => {
-    caption.innerHTML = captionHtml(work, null, 'ambient');
+    caption.innerHTML = captionHtml(work, cachedDetails(work), 'ambient');
     caption.classList.remove('out');
     void artDetails(work, details => {
       if (caption.dataset.work === work.id) caption.innerHTML = captionHtml(work, details, 'ambient');
@@ -67,9 +67,16 @@ function showArtwork(work: LoadedArtwork): void {
   }, 900);
 }
 
+/** The next artwork with its description already loaded, so text and image appear together. */
+async function nextWithDetails(): Promise<LoadedArtwork | null> {
+  const work = await nextArtwork();
+  if (work) await Promise.race([artDetails(work).catch(() => null), new Promise(resolve => setTimeout(resolve, 8000))]);
+  return work;
+}
+
 function scheduleArt(session: number): void {
   clearTimeout(artTimer);
-  prepared = nextArtwork();
+  prepared = nextWithDetails();
   artTimer = setTimeout(async () => {
     const work = await prepared;
     if (session !== artSession) return;
@@ -79,7 +86,7 @@ function scheduleArt(session: number): void {
 }
 
 async function startArt(session: number): Promise<void> {
-  const work = await (prepared ?? nextArtwork());
+  const work = await (prepared ?? nextWithDetails());
   if (session !== artSession) return;
   if (!work) {
     document.body.classList.remove('ambient-art');
@@ -91,7 +98,7 @@ async function startArt(session: number): Promise<void> {
 
 /** Starts downloading the first artwork early, so ambient mode opens on a picture instead of a blank screen. */
 export function prepareAmbient(): void {
-  if (settings.ambientStyle === 'art' && !prepared) prepared = nextArtwork();
+  if (settings.ambientStyle === 'art' && !prepared) prepared = nextWithDetails();
 }
 
 export function startAmbient(): void {
