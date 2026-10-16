@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, height=1080">
+<!--CSP-->
+<meta name="referrer" content="no-referrer">
+<title>TV Dashboard</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-view="home">
+  <div id="stage">
+    <div class="lamp"></div>
+
+    <section id="home" class="view">
+      <header class="letterhead rise" style="--i:0">
+        <div id="clock" class="clock"></div>
+        <div class="dateline">
+          <b id="date"></b>
+          <span id="placeline"></span>
+          <span id="freshness" class="freshness"></span>
+        </div>
+      </header>
+      <main id="letter" class="letter rise" style="--i:1"></main>
+      <aside id="margin" class="margin rise" style="--i:2"></aside>
+      <footer class="rackrow rise" style="--i:3">
+        <div id="shelf" class="shelf"></div>
+        <div id="hint" class="hint"></div>
+      </footer>
+    </section>
+
+    <section id="news" class="view">
+      <header class="news-head">
+        <div>
+          <h1>The news</h1>
+          <div id="news-subtitle" class="news-subtitle"></div>
+        </div>
+        <div id="news-clock" class="news-clock"></div>
+      </header>
+      <nav id="news-tabs" class="tabs"></nav>
+      <article id="news-detail" class="news-detail"></article>
+      <div id="news-list" class="news-list"><div id="news-track" class="news-track"></div></div>
+      <footer class="news-hint"><span>◀ ▶ sections</span><span>▲ ▼ stories</span><span>OK open</span><span>Back home</span></footer>
+    </section>
+
+    <section id="settings" class="sheet">
+      <div class="sheet-panel">
+        <h2>Settings</h2>
+        <div id="settings-rows" class="srows"></div>
+        <div id="settings-status" class="sstatus"></div>
+        <div id="pairing" class="pairing"></div>
+      </div>
+    </section>
+
+    <section id="ambient">
+      <div class="glow"></div>
+      <div class="glow two"></div>
+      <div id="drift" class="drift">
+        <div id="aclock" class="aclock"></div>
+        <div id="adate" class="adate"></div>
+        <div id="aline" class="aline"></div>
+      </div>
+    </section>
+
+    <div id="toast" class="toast"></div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
