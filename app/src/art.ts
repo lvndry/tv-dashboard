@@ -420,6 +420,69 @@ async function smithsonianWorks(collection: typeof smithsonianCollections[number
   });
 }
 
+/** Chester Beatty manuscripts, paintings and prints, through Europeana's search API. */
+const europeanaCollections: { key: string; query: string; region: Region; limit: number }[] = [
+  { key: 'cbl-middle-east', query: 'Persian OR Ottoman OR Arabic OR Shahnama OR Turkish OR Armenian OR Quran OR Safavid OR Timurid OR Iran', region: 'Middle East', limit: 400 },
+  { key: 'cbl-asia', query: 'Japanese OR Chinese OR Mughal OR Indian OR Akbar OR Tibetan OR Burmese OR Thai OR Korean OR Japan OR China OR India', region: 'Asia', limit: 400 },
+  { key: 'cbl-africa', query: 'Ethiopian OR Ethiopia OR Amharic OR Geez', region: 'Africa', limit: 100 },
+];
+
+interface EuropeanaItem {
+  id: string;
+  title?: string[];
+  dcTitleLangAware?: Record<string, string[]>;
+  dcCreator?: string[];
+  year?: string[];
+  edmIsShownBy?: string[];
+  edmPreview?: string[];
+}
+
+/** The library's IIIF viewer serves any width: "/800/0/" in the link becomes the size asked for. */
+const chesterBeattySized = (url: string, width: number): string => url.replace(/\/content\/([^/]+)\/\d+\/0\//, `/content/$1/${width}/0/`);
+
+async function europeanaWorks(collection: typeof europeanaCollections[number]): Promise<Artwork[]> {
+  const seed = Math.floor(Math.random() * 100000);
+  const until = untilFor(collection.region);
+  const works: Artwork[] = [];
+  for (let start = 1; start <= collection.limit; start += 100) {
+    const params = new URLSearchParams({
+      wskey: config.art.europeanaKey!,
+      query: `(${collection.query}) NOT (costume OR dress OR fashion OR robe OR coat OR hat)`,
+      reusability: 'open',
+      media: 'true',
+      rows: String(Math.min(100, collection.limit - start + 1)),
+      start: String(start),
+      sort: `random_${seed}`,
+      profile: 'rich',
+    });
+    params.append('qf', 'DATA_PROVIDER:"Chester Beatty"');
+    params.append('qf', 'TYPE:IMAGE');
+    const page = await fetchJson<{ items?: EuropeanaItem[]; totalResults: number }>(`https://api.europeana.eu/record/v2/search.json?${params}`, 30000);
+    for (const item of page.items ?? []) {
+      const image = item.edmIsShownBy?.[0];
+      const title = item.dcTitleLangAware?.en?.[0] ?? item.title?.[0];
+      if (!image || !title || works.some(work => work.id === `eu:${item.id}`)) continue;
+      const year = item.year?.[0] ? Number(item.year[0]) : null;
+      if (year !== null && (year > until || year < config.art.from)) continue;
+      const maker = item.dcCreator?.[0] ?? '';
+      works.push({
+        id: `eu:${item.id}`,
+        title: cleanTitle(title),
+        maker: /^unknown$/i.test(maker) ? '' : maker,
+        date: year === null ? '' : yearLabel(year),
+        year,
+        place: 'Chester Beatty, Dublin',
+        image: chesterBeattySized(image, 1200),
+        thumb: chesterBeattySized(image, 480),
+        group: 'Chester Beatty',
+        region: collection.region,
+      });
+    }
+    if (start + 100 > page.totalResults) break;
+  }
+  return works;
+}
+
 function sources(): Source[] {
   const art = config.art;
   const list: Source[] = art.museums.map(museum => ({
@@ -448,6 +511,11 @@ function sources(): Source[] {
   if (art.smithsonianKey) {
     for (const collection of smithsonianCollections) {
       list.push({ key: `si:${collection.key}`, label: `Smithsonian · ${collection.group}`, load: async () => ({ savedAt: Date.now(), works: await smithsonianWorks(collection) }) });
+    }
+  }
+  if (art.europeanaKey) {
+    for (const collection of europeanaCollections) {
+      list.push({ key: `eu:${collection.key}`, label: `Chester Beatty · ${collection.region}`, load: async () => ({ savedAt: Date.now(), works: await europeanaWorks(collection) }) });
     }
   }
   if (art.cleveland) {

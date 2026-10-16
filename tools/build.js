@@ -11,7 +11,7 @@ export const dist = join(app, 'dist');
 
 const fixedOrigins = [
   'https://api.open-meteo.com', 'https://geocoding-api.open-meteo.com', 'https://auth.openai.com', 'https://chatgpt.com',
-  'https://site.api.espn.com', 'https://opendata.paris.fr', 'https://api.si.edu', 'https://collections.louvre.fr',
+  'https://site.api.espn.com', 'https://opendata.paris.fr', 'https://api.si.edu', 'https://collections.louvre.fr', 'https://api.europeana.eu',
   'https://query.wikidata.org', 'https://collectionapi.metmuseum.org', 'https://openaccess-api.clevelandart.org',
         'https://www.wikidata.org', 'https://en.wikipedia.org', 'https://fr.wikipedia.org', 'https://ipwho.is',
   'https://api.perplexity.ai', 'https://www.perplexity.ai', 'https://r.jina.ai', 'https://www.youtube.com', 'https://www.youtube-nocookie.com', 'https://i.ytimg.com',

@@ -64,6 +64,8 @@ export interface ArtConfig {
   egyptianTombs: boolean;
   /** A free api.data.gov key (https://api.data.gov/signup/) to add the Smithsonian's open-access collections. */
   smithsonianKey?: string;
+  /** A free Europeana API key (https://pro.europeana.eu/page/get-api) to add the Chester Beatty's manuscripts and prints. */
+  europeanaKey?: string;
   /** Works from African cultures held in any museum, found through Wikidata. Defaults to true. */
   africanCultures?: boolean;
   /**

@@ -158,12 +158,28 @@ async function louvreMaterial(id: string): Promise<SourceMaterial> {
   return { text, textSource: text ? 'museum' : '', facts };
 }
 
+interface EuropeanaProxy { europeanaProxy?: boolean; dcDescription?: Record<string, string[]>; dctermsMedium?: Record<string, string[]>; dctermsExtent?: Record<string, string[]>; dcDate?: Record<string, string[]> }
+
+async function europeanaMaterial(id: string): Promise<SourceMaterial> {
+  const record = await fetchJson<{ object: { proxies: EuropeanaProxy[] } }>(`https://api.europeana.eu/record/v2${id}.json?wskey=${encodeURIComponent(config.art.europeanaKey ?? '')}`);
+  const proxy = record.object.proxies.find(item => !item.europeanaProxy) ?? record.object.proxies[0];
+  const first = (field?: Record<string, string[]>): string[] => field?.en ?? field?.def ?? [];
+  const text = first(proxy?.dcDescription).join('\n');
+  const facts = [
+    { label: 'Material', value: first(proxy?.dctermsMedium).map(item => item.replace(/\s*\(material\)/i, '')).join(', ') },
+    { label: 'Size', value: first(proxy?.dctermsExtent)[0] ?? '' },
+    { label: 'Date', value: first(proxy?.dcDate)[0] ?? '' },
+  ].filter(fact => fact.value);
+  return { text, textSource: text ? 'museum' : '', facts };
+}
+
 async function sourceMaterial(work: Artwork): Promise<SourceMaterial> {
   const [source, id] = work.id.split(':') as [string, string];
   if (source === 'wd') return wikidataMaterial(id);
   if (source === 'met') return metMaterial(id);
   if (source === 'cma') return clevelandMaterial(id);
   if (source === 'louvre') return louvreMaterial(id);
+  if (source === 'eu') return europeanaMaterial(id);
   return { text: '', textSource: '', facts: [] };
 }
 
