@@ -1,11 +1,41 @@
-// Where the weather is for. Set on the TV (Settings → Weather location) or, by default, in config.ts.
+// Where the weather is for. Priority: a place picked on the TV (Settings →
+// Weather location) → a place detected from the TV's own IP (once a day) →
+// the static default in config.ts.
 
 import { config } from '../config';
 import { fetchJson } from './net';
-import { settings, updateSettings, type SavedLocation } from './store';
+import { readCache, settings, updateSettings, writeCache, type SavedLocation } from './store';
+
+const AUTO_TTL = 24 * 3600 * 1000;
+
+function autoLocation(): SavedLocation | null {
+  const cached = readCache<SavedLocation>('location');
+  if (cached && Date.now() - cached.savedAt < AUTO_TTL) return cached.value;
+  return null;
+}
 
 export function currentLocation(): SavedLocation {
-  return settings.location ?? { name: config.place, latitude: config.latitude, longitude: config.longitude, timeZone: config.timeZone };
+  return settings.location ?? autoLocation() ?? { name: config.place, latitude: config.latitude, longitude: config.longitude, timeZone: config.timeZone };
+}
+
+/** Reverse-geocodes the TV's own IP so the place follows you when home moves. */
+export async function autoDetectLocation(): Promise<boolean> {
+  if (settings.location) return false; // a manual choice always wins
+  try {
+    const ip = await fetchJson<{ success?: boolean; city?: string; region?: string; country?: string; latitude?: number; longitude?: number; timezone?: { id?: string } }>('https://ipwho.is/', 8000);
+    if (ip?.success && ip.city && ip.latitude != null && ip.longitude != null) {
+      writeCache('location', {
+        name: [ip.city, ip.region, ip.country].filter(Boolean).join(' '),
+        latitude: Math.round(ip.latitude * 1000) / 1000,
+        longitude: Math.round(ip.longitude * 1000) / 1000,
+        timeZone: ip.timezone?.id ?? config.timeZone,
+      });
+      return true;
+    }
+  } catch {
+    // Offline or blocked: keep whatever we already have (cached or config).
+  }
+  return false;
 }
 
 /** Short form for sentences: "Paris 15 Vaugirard" reads as "Paris". */
