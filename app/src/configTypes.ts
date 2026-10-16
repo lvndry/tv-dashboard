@@ -108,6 +108,8 @@ export interface Config {
   parisEvents: boolean;
   /** Ambient mode shows public-domain art from these collections. */
   art: ArtConfig;
+  /** Nudges the screensaver clock every 45 s so it can't burn into an OLED panel. LCD TVs don't need it. */
+  burnInShift?: boolean;
   brief: {
     /** Perplexity API key (pplx-…) that writes the daily letter. Never committed. */
     perplexityKey: string;
