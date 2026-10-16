@@ -18,7 +18,7 @@ export const config = defineConfig({
     // display name. Pin appId to the real id (the one you installed it with)
     // so the chip never reports "not installed".
     { kind: 'app', id: 'stremio', name: 'Stremio', dot: '#8A5CF6', match: ['stremio'], appId: 'newslO9NqF' },
-    { kind: 'app', id: 'tizentube', name: 'TizenTube', dot: '#FF3B30', match: ['tizentube', 'youtube tv'], appId: 'tUb3Xq7Lm9' },
+    { kind: 'app', id: 'tizentube', name: 'TizenTube', dot: '#FF3B30', match: ['tizentube'], appId: 'xvvl3S1TT1.TizenTubeStandalone' },
     { kind: 'app', id: 'youtube', name: 'YouTube', dot: '#FF4E45', match: ['youtube'], appId: '111299001912' },
     { kind: 'input', id: 'ps5', name: 'PS5', dot: '#3D7BFF' },
     { kind: 'shortcut', id: 'news', name: 'News', dot: '#F2DE6B', target: 'news' },
