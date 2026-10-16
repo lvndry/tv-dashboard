@@ -56,9 +56,9 @@ export async function resolveApps(entries: AppEntry[]): Promise<AppResolution> {
   }
   const apps = await installedApps();
   for (const entry of entries) {
-    const byName = apps.find(app => entry.match.some(term => app.name.toLowerCase().includes(term)));
     const byId = entry.appId ? apps.find(app => app.id === entry.appId) : undefined;
-    resolution.set(entry.id, byName?.id ?? byId?.id ?? null);
+    const byName = apps.find(app => entry.match.some(term => app.name.toLowerCase().includes(term)));
+    resolution.set(entry.id, byId?.id ?? byName?.id ?? null);
   }
   return resolution;
 }

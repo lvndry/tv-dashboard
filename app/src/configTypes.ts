@@ -15,7 +15,7 @@ export interface AppEntry {
   dot: string;
   /** Matched case-insensitively against installed app names on the TV. */
   match: string[];
-  /** Known Tizen app id, used when name matching finds nothing. */
+  /** Tizen app id. When it's installed it wins over name matching. */
   appId?: string;
 }
 
