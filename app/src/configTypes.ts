@@ -90,8 +90,11 @@ export interface Config {
   /** Ambient mode shows public-domain art from these collections. */
   art: ArtConfig;
   brief: {
-    /** ChatGPT model used once the TV is connected in Settings. */
-    model: string;
+    /** Perplexity API key (pplx-…) that writes the daily letter. Never committed. */
+    perplexityKey: string;
+    /** Perplexity Agent-API model, e.g. perplexity/sonar. */
+    perplexityModel: string;
+    /** Language of the letter. */
     language: string;
     refreshMinutes: number;
   };

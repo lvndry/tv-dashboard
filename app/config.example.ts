@@ -79,7 +79,9 @@ export const config = defineConfig({
   },
 
   brief: {
-    model: 'gpt-6-luna',
+    // Perplexity API key (https://www.perplexity.ai/settings/api). Writes the daily letter.
+    perplexityKey: 'pplx-your-key-here',
+    perplexityModel: 'perplexity/sonar',
     language: 'English',
     refreshMinutes: 60,
   },

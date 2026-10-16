@@ -2,6 +2,7 @@ import { config } from '../../config';
 import { deviceVerificationUrl, disconnect, pairDevice, type DeviceCode } from '../chatgpt';
 import { refreshArt } from '../art';
 import { briefState, data, refreshAll, refreshBrief, refreshConnection } from '../data';
+import { perplexityAvailable } from '../perplexity';
 import { byId, escapeHtml, toast } from '../dom';
 import type { Action } from '../platform';
 import { accents, artIntervals, idleChoices, settings, updateSettings } from '../store';
@@ -160,17 +161,20 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
         disconnectArmedUntil = Date.now() + 4000;
         setTimeout(renderRows, 4100);
       },
-      note: () => data.chatgpt.connected ? 'Writes the news brief on your plan.' : `Pair with a code at ${deviceVerificationUrl.replace('https://', '')}.`,
+      note: () => data.chatgpt.connected ? 'Writes the gallery artwork stories on your plan.' : `Pair with a code at ${deviceVerificationUrl.replace('https://', '')}. Art stories only.`,
     },
     {
       label: 'AI news brief',
-      value: () => !data.chatgpt.connected ? 'Needs ChatGPT' : settings.briefEnabled ? 'On' : 'Off',
+      value: () => !perplexityAvailable() ? 'No Perplexity key' : settings.briefEnabled ? 'On' : 'Off',
       change: () => {
-        if (!data.chatgpt.connected) return;
+        if (!perplexityAvailable()) return;
         updateSettings({ briefEnabled: !settings.briefEnabled });
         if (settings.briefEnabled) void refreshBrief();
       },
-      note: () => `${config.brief.model}, at most every ${config.brief.refreshMinutes} min.`,
+      note: () => perplexityAvailable()
+        ? `Perplexity ${config.brief.perplexityModel}, at most every ${config.brief.refreshMinutes} min.`
+        : 'Add a pplx-… key in app/config.ts → brief.perplexityKey.',
+
     },
     {
       label: 'Ambient mode after',

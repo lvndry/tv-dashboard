@@ -2,6 +2,7 @@ import { config } from '../config';
 import { briefSignature, createBrief, type Brief } from './brief';
 import { connection } from './chatgpt';
 import { fetchParisEvents, type CityEvent } from './events';
+import { perplexityAvailable } from './perplexity';
 import { fetchFeed, mergeStories, type Story } from './news';
 import { fetchToday, fetchWeek, mergeLive, needsLiveUpdates, type Match } from './sports';
 import { readCache, settings, writeCache } from './store';
@@ -43,7 +44,7 @@ for (const feed of config.news) {
   data.status.set(`feed:${feed.id}`, { name: `${feed.name} · ${feed.section}`, ok: null, updatedAt: newsCache?.savedAt ?? null, detail: newsCache ? 'cached' : 'waiting' });
 }
 if (briefCache) {
-  data.status.set('brief', { name: `Brief · ChatGPT ${config.brief.model}`, ok: null, updatedAt: briefCache.savedAt, detail: 'cached' });
+    data.status.set('brief', { name: `Brief · Perplexity ${config.brief.perplexityModel}`, ok: null, updatedAt: briefCache.savedAt, detail: 'cached' });
 }
 
 const listeners = new Set<() => void>();
@@ -118,7 +119,7 @@ export async function refreshNews(): Promise<void> {
 const briefMaxAgeMs = config.brief.refreshMinutes * 60000;
 
 export function briefState(): 'unavailable' | 'off' | 'loading' | 'ready' | 'error' | 'waiting' {
-  if (!data.chatgpt.connected) return 'unavailable';
+    if (!perplexityAvailable()) return 'unavailable';
   if (!settings.briefEnabled) return 'off';
   if (data.briefLoading) return 'loading';
   if (data.status.get('brief')?.ok === false) return 'error';
@@ -126,7 +127,7 @@ export function briefState(): 'unavailable' | 'off' | 'loading' | 'ready' | 'err
 }
 
 export async function refreshBrief(force = false): Promise<void> {
-  if (!data.chatgpt.connected || !settings.briefEnabled || data.briefLoading || !data.stories.length) return;
+    if (!perplexityAvailable() || !settings.briefEnabled || data.briefLoading || !data.stories.length) return;
   const fresh = data.briefAt !== null && Date.now() - data.briefAt < briefMaxAgeMs;
   const sameHeadlines = data.brief?.signature === briefSignature(data.stories);
   if (!force && (fresh || sameHeadlines)) return;
@@ -136,9 +137,9 @@ export async function refreshBrief(force = false): Promise<void> {
     data.brief = await createBrief(data.stories);
     data.briefAt = Date.now();
     writeCache('brief', data.brief, data.briefAt);
-    setStatus('brief', { name: `Brief · ChatGPT ${config.brief.model}`, ok: true, updatedAt: data.briefAt, detail: `${data.brief.stories.length} stories` });
+    setStatus('brief', { name: `Brief · Perplexity ${config.brief.perplexityModel}`, ok: true, updatedAt: data.briefAt, detail: `${data.brief.stories.length} stories` });
   } catch (error) {
-    setStatus('brief', { name: `Brief · ChatGPT ${config.brief.model}`, ok: false, updatedAt: data.briefAt, detail: message(error) });
+    setStatus('brief', { name: `Brief · Perplexity ${config.brief.perplexityModel}`, ok: false, updatedAt: data.briefAt, detail: message(error) });
   } finally {
     data.briefLoading = false;
     notify();
@@ -150,13 +151,9 @@ export async function refreshConnection(): Promise<void> {
     data.chatgpt = await connection();
   } catch (error) {
     data.chatgpt = { connected: false, plan: null };
-    setStatus('brief', { name: `Brief · ChatGPT ${config.brief.model}`, ok: false, updatedAt: data.briefAt, detail: message(error) });
   }
-  if (!data.chatgpt.connected) {
-    data.brief = null;
-    data.briefAt = null;
-    writeCache('brief', null);
-  }
+  // The brief no longer depends on ChatGPT (it runs on Perplexity); the
+  // connection state now only gates the gallery art stories.
   notify();
 }
 

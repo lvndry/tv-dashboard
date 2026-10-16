@@ -13,7 +13,8 @@ const fixedOrigins = [
   'https://api.open-meteo.com', 'https://geocoding-api.open-meteo.com', 'https://auth.openai.com', 'https://chatgpt.com',
   'https://site.api.espn.com', 'https://opendata.paris.fr',
   'https://query.wikidata.org', 'https://collectionapi.metmuseum.org', 'https://openaccess-api.clevelandart.org',
-    'https://www.wikidata.org', 'https://en.wikipedia.org', 'https://fr.wikipedia.org', 'https://ipwho.is',
+        'https://www.wikidata.org', 'https://en.wikipedia.org', 'https://fr.wikipedia.org', 'https://ipwho.is',
+  'https://api.perplexity.ai', 'https://r.jina.ai', 'https://www.youtube.com', 'https://www.youtube-nocookie.com', 'https://i.ytimg.com',
 ];
 
 /** connect-src is limited to the weather API, OpenAI, the art collections, and the feeds named in config.ts. */
@@ -28,6 +29,7 @@ export function contentSecurityPolicy() {
     "font-src 'self'",
     'img-src https: data:',
     `connect-src ${connect}`,
+        "frame-src https://www.youtube-nocookie.com https://www.youtube.com",
     "base-uri 'none'",
     "form-action 'none'",
     "frame-ancestors 'none'",

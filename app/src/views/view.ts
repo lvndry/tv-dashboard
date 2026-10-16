@@ -6,5 +6,6 @@ export interface View {
   handle(action: Action): boolean;
   pointer(target: HTMLElement): void;
   enter(): void;
+  exit?(): void;
   refreshClock?(): void;
 }
