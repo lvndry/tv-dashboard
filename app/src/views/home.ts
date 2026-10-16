@@ -5,7 +5,9 @@ import { data, storyById } from '../data';
 import { afterPaint, byId, escapeHtml, imageHtml, shorten } from '../dom';
 import { availability, openRackEntry } from '../launcher';
 import { currentLocation } from '../location';
+import type { CityEvent } from '../events';
 import type { Story } from '../news';
+import { interest, isToday, type Match } from '../sports';
 import type { Action } from '../platform';
 import { lastLaunch, settings } from '../store';
 import { relativeAge, timeLabel, weekdayShort, zoned } from '../time';
@@ -137,6 +139,7 @@ function allNewsNote(): string {
 }
 
 const shortcutDetail = {
+  whatson: 'Football fixtures and live scores, and the week’s major events in Paris.',
   news: 'Every headline, by section, with the ChatGPT brief when it’s connected.',
   gallery: 'About 2,800 public-domain works, from ancient Egypt to Romanticism. Favourites come up more often in ambient mode.',
   settings: 'ChatGPT, ambient mode, highlighter colour, clock and console input.',
@@ -166,6 +169,56 @@ function rackNote(entry: RackEntry): string {
     ${state === 'missing' ? '' : okLine(action)}`;
 }
 
+/**
+ * A headline that reads whole inside a sentence. Long titles keep their most informative
+ * clause ("Ukraine : Zelensky à Bruxelles…" → "Zelensky à Bruxelles…"); titles with no
+ * clause short enough are skipped rather than cut mid-sentence.
+ */
+function letterHeadline(title: string, maxLength = 58): string | null {
+  const cleaned = title.replace(/^(en direct|direct|vidéo|video|live|exclusif)\s*[,:.–-]\s*/i, '').replace(/[«»"“”]/g, '').replace(/\s+/g, ' ').trim();
+  if (cleaned.length <= maxLength) return cleaned;
+  // "Topic : what happened" keeps what happened; "Someone, role : quote" has nothing worth keeping on its own.
+  const colon = cleaned.search(/\s[:–—]\s/);
+  if (colon < 0) return null;
+  const quotedRemark = /\s:\s*[«"“]/.test(title) || cleaned.slice(0, colon).includes(',');
+  if (quotedRemark) return null;
+  const rest = cleaned.slice(colon + 3).trim();
+  return rest.length <= maxLength && rest.split(' ').length >= 4 ? rest.charAt(0).toUpperCase() + rest.slice(1) : null;
+}
+
+const gearIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>';
+
+const crestImage = (url: string): string => url ? `<img class="crest" src="${escapeHtml(url)}" alt="" referrerpolicy="no-referrer">` : '';
+
+function matchNote(match: Match): string {
+  const status = match.state === 'in' ? `<span class="live-dot"></span>Live · ${escapeHtml(match.status)}`
+    : match.state === 'post' ? 'Full time'
+    : `${isToday(match) ? 'Today' : zoned(match.kickoff).weekday} at ${timeLabel(match.kickoff)}`;
+  const middle = match.state === 'pre' ? '<span class="vs">v</span>' : `<b>${escapeHtml(match.home.score)}–${escapeHtml(match.away.score)}</b>`;
+  return `
+    <div class="kicker">${escapeHtml(match.league)}${match.favourite ? ' · your team' : ''}</div>
+    <div class="note-match">
+      <div>${crestImage(match.home.logo)}<span>${escapeHtml(match.home.short)}</span></div>
+      <div class="note-score">${middle}</div>
+      <div>${crestImage(match.away.logo)}<span>${escapeHtml(match.away.short)}</span></div>
+    </div>
+    <div class="nmeta">${status}${match.venue ? `<br>${escapeHtml(match.venue)}` : ''}</div>
+    ${okLine('See all the football')}`;
+}
+
+function eventNote(event: CityEvent): string {
+  return `
+    ${imageHtml(event.image, 'thumb')}
+    <div class="kicker">${escapeHtml([event.tags[0], event.free ? 'Free' : ''].filter(Boolean).join(' · '))}</div>
+    <div class="ntitle">${escapeHtml(event.title)}</div>
+    <div class="nmeta">${escapeHtml([event.venue, event.dates].filter(Boolean).join(' · '))}</div>
+    ${okLine('See what’s on in Paris')}`;
+}
+
+const matchPhrase = (match: Match): string => match.state === 'pre'
+  ? `${match.home.short}–${match.away.short} at ${timeLabel(match.kickoff)}`
+  : `${match.home.short} ${match.home.score}–${match.away.score} ${match.away.short}${match.state === 'in' ? `, ${match.status}` : ''}`;
+
 function newsSpread(stories: Story[], count: number): Story[] {
   const bySection = new Map<string, Story[]>();
   for (const story of stories) {
@@ -183,7 +236,10 @@ function newsSpread(stories: Story[], count: number): Story[] {
   return picked;
 }
 
-export function createHome(openNews: (target?: { briefIndex?: number; storyId?: string }) => void): View {
+export function createHome(
+  openNews: (target?: { briefIndex?: number; storyId?: string }) => void,
+  openWhatsOn: (target: { tab: 'football' | 'paris'; id?: string }) => void,
+): View {
   const element = byId('home');
   const letter = byId('letter');
   const margin = byId('margin');
@@ -202,7 +258,11 @@ export function createHome(openNews: (target?: { briefIndex?: number; storyId?: 
   shelf.innerHTML = `<span class="racklabel">Open</span><span class="rack-marker" id="rack-marker"></span>` +
     config.rack.map((entry, index) => {
       const firstShortcut = entry.kind === 'shortcut' && config.rack[index - 1]?.kind !== 'shortcut' && index > 0;
-      return `${firstShortcut ? '<span class="rack-divider"></span>' : ''}<span class="chip${entry.kind === 'shortcut' ? ' quiet' : ''}" data-focus="rack" data-index="${index}"><i style="background:${entry.dot}"></i>${escapeHtml(entry.name)}</span>`;
+      const divider = firstShortcut ? '<span class="rack-divider"></span>' : '';
+      if (entry.kind === 'shortcut' && entry.target === 'settings') {
+        return `${divider}<span class="chip quiet icon-only" data-focus="rack" data-index="${index}" title="${escapeHtml(entry.name)}">${gearIcon}</span>`;
+      }
+      return `${divider}<span class="chip${entry.kind === 'shortcut' ? ' quiet' : ''}" data-focus="rack" data-index="${index}"><i style="background:${entry.dot}"></i>${escapeHtml(entry.name)}</span>`;
     }).join('');
   const chips = Array.from(shelf.querySelectorAll<HTMLElement>('.chip'));
   const rackMarker = byId('rack-marker');
@@ -225,26 +285,60 @@ export function createHome(openNews: (target?: { briefIndex?: number; storyId?: 
     }
     result.push(opening);
 
+    const football = footballLine();
+    if (football) result.push(football);
+
     const brief = settings.briefEnabled ? data.brief : null;
     const allNews: Phrase = { id: 'news-all', text: brief ? 'read the whole brief' : 'see all the news', note: allNewsNote, activate: () => openNews() };
     if (brief && brief.stories.length) {
       const items = brief.stories.slice(0, 5).map((story, index): Phrase => ({
         id: `brief-${index}`, text: story.short, note: () => briefStoryNote(story), activate: () => openNews({ briefIndex: index }),
       }));
-      result.push(closing(['Today: ', ...joinList(items.slice(0, 3))]));
-      result.push(items.length > 3 ? ['Also ', ...joinList(items.slice(3)), ', or ', allNews, '.'] : ['Or ', allNews, '.']);
+      result.push(['Today: ', ...joinList(items.slice(0, 3)), ', or ', allNews, '.']);
     } else if (data.stories.length) {
-      const items = newsSpread(data.stories, 5).map((story, index): Phrase => ({
-        id: `story-${index}`, text: shorten(story.title, 52), note: () => storyNote(story), activate: () => openNews({ storyId: story.id }),
+      const readable = data.stories.flatMap(story => {
+        const headline = letterHeadline(story.title);
+        return headline ? [{ story, headline }] : [];
+      });
+      const picked = newsSpread(readable.map(item => item.story), 3);
+      const items = picked.map((story, index): Phrase => ({
+        id: `story-${index}`, text: readable.find(item => item.story === story)!.headline, note: () => storyNote(story), activate: () => openNews({ storyId: story.id }),
       }));
-      result.push(closing(['In the papers: ', ...joinList(items.slice(0, 3))]));
-      result.push(items.length > 3 ? ['Also ', ...joinList(items.slice(3)), ', or ', allNews, '.'] : ['Or ', allNews, '.']);
+      result.push(items.length ? ['In the papers: ', ...joinList(items), ', or ', allNews, '.'] : ['The papers are in: ', allNews, '.']);
     } else if ([...data.status.entries()].filter(([key]) => key.startsWith('feed:')).every(([, status]) => status.ok === false)) {
       result.push(['The news feeds are unreachable right now.']);
     } else {
       result.push(['In the papers: ', { loading: 'fetching the headlines' }, '.']);
     }
+
+    const paris = data.events.flatMap(event => event.title.length <= 48 ? [event] : []).slice(0, 3);
+    if (paris.length) {
+      const items = paris.map((event): Phrase => ({ id: `paris-${event.id}`, text: event.title, note: () => eventNote(event), activate: () => openWhatsOn({ tab: 'paris', id: event.id }) }));
+      result.push(['In Paris this week: ', ...joinList(items), '.']);
+    }
     return result;
+  }
+
+  /** Live matches first, then today's best fixtures, otherwise the next one worth knowing about. */
+  function footballLine(): Part[] | null {
+    const now = Date.now();
+    const phrase = (match: Match): Phrase => ({
+      id: `match-${match.id}`, text: matchPhrase(match), note: () => matchNote(match), activate: () => openWhatsOn({ tab: 'football', id: match.id }),
+    });
+    const byInterest = (list: Match[]): Match[] => list.slice().sort((first, second) => interest(second) - interest(first));
+    const live = byInterest(data.matches.filter(match => match.state === 'in')).slice(0, 3);
+    if (live.length) return ['Live now: ', ...joinList(live.map(phrase)), '.'];
+    const today = byInterest(data.matches.filter(match => match.state === 'pre' && isToday(match, now))).slice(0, 3)
+      .sort((first, second) => first.kickoff - second.kickoff);
+    if (today.length) {
+      const evening = today.every(match => zoned(match.kickoff).hour >= 17);
+      return [evening ? 'Tonight: ' : 'Today: ', ...joinList(today.map(phrase)), '.'];
+    }
+    const upcoming = byInterest(data.matches.filter(match => match.state === 'pre' && match.kickoff - now < 4 * 86400000)).slice(0, 2)
+      .sort((first, second) => first.kickoff - second.kickoff);
+    if (!upcoming.length) return null;
+    const dated = upcoming.map(match => ({ ...phrase(match), text: `${zoned(match.kickoff).weekday}, ${match.home.short}–${match.away.short}` }));
+    return ['Coming up: ', ...joinList(dated), '.'];
   }
 
   function renderPart(part: Part): string {

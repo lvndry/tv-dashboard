@@ -53,10 +53,18 @@ News and Settings sit at the end of the rack along the bottom, so every remote c
 - `name`, `place`, `latitude`, `longitude`, `timeZone`: the greeting, the weather location and the clock.
 - `rack`: what sits along the bottom, left to right. Apps (`kind: 'app'`) are matched by their installed name on the TV, so you don't need package IDs. Add an HDMI device with `kind: 'input'`. `kind: 'shortcut'` opens News or Settings.
 - `news`: any RSS or Atom feeds, each with a section. Their hosts are added to the app's network allowlist at build time.
+- `sports`: the leagues to follow (ESPN ids such as `fra.1`, `eng.1`, `esp.1`, `uefa.champions`) and your teams, whose matches come first.
+- `parisEvents`: the City of Paris's picks of the week's major events, for Paris.
 - `art`: where ambient mode finds its art (see below).
 - `brief`: the ChatGPT model, language and refresh interval for the news brief.
 
 Ambient delay, artwork interval, gallery slideshow, highlighter colour, clock format, console HDMI port, the ChatGPT connection and the weather location are set on the TV itself, in Settings. For the weather location, type a neighbourhood, town or postcode with the TV keyboard and pick the match; it's saved on the TV and overrides `place`, `latitude` and `longitude` from the config.
+
+## What's on
+
+The letter now has a line for football (live scores while a match is on, tonight's best fixtures, or what's coming up) and one for the week's major events in Paris. **What's on** on the rack opens both in full: fixtures and results with club crests, kick-off times and venues, and the Paris picks with dates, venue and a link to paris.fr.
+
+Football comes from ESPN's public scoreboard feed, refreshed hourly and every minute during a match. Paris events come from the City of Paris's [Que faire à Paris](https://opendata.paris.fr/explore/dataset/que-faire-a-paris-/) open data, keeping its editorial picks in culture and big-night-out categories and leaving out round-ups and civic programmes. Neither needs a key.
 
 ## Art in ambient mode
 

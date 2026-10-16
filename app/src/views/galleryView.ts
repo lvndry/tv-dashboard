@@ -156,7 +156,7 @@ export function createGalleryView(close: () => void): View {
     incoming.style.setProperty('--art-duration', `${settings.artSeconds + 10}s`);
     incoming.style.setProperty('--pan-x', '0%');
     incoming.style.setProperty('--pan-y', '0%');
-    incoming.innerHTML = `<img class="art-backdrop" src="${url}" alt=""><img class="art-image" src="${url}" alt="">`;
+    incoming.innerHTML = `<img class="art-backdrop" src="${escapeHtml(loaded.thumb || loaded.image)}" alt=""><img class="art-image" src="${url}" alt="">`;
     void incoming.offsetWidth;
     incoming.classList.add('visible');
     outgoing.classList.remove('visible');

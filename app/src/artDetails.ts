@@ -20,19 +20,36 @@ interface SourceMaterial {
   facts: { label: string; value: string }[];
 }
 
-const cacheName = 'art-details';
-const cacheLimit = 300;
-const cache = new Map<string, ArtDetails>(Object.entries(readCache<Record<string, ArtDetails>>(cacheName)?.value ?? {}));
+// Two caches: the source material (Wikipedia or museum text and facts), which is cheap to
+// refetch, and ChatGPT's stories, which are generated once per artwork and kept.
+const materialCacheName = 'art-material';
+const materialLimit = 400;
+const storyCacheName = 'art-stories';
+const storyLimit = 1500;
+
+function loadMap<T>(name: string): Map<string, T> {
+  return new Map<string, T>(Object.entries(readCache<Record<string, T>>(name)?.value ?? {}));
+}
+
+const materialCache = loadMap<ArtDetails>(materialCacheName);
+const storyCache = loadMap<string>(storyCacheName);
 const pending = new Map<string, Promise<ArtDetails>>();
 
-function remember(id: string, details: ArtDetails): void {
-  cache.set(id, details);
-  while (cache.size > cacheLimit) cache.delete(cache.keys().next().value!);
-  writeCache(cacheName, Object.fromEntries(cache));
+function rememberIn<T>(map: Map<string, T>, name: string, limit: number, id: string, value: T): void {
+  map.delete(id);
+  map.set(id, value);
+  while (map.size > limit) map.delete(map.keys().next().value!);
+  writeCache(name, Object.fromEntries(map));
+}
+
+function withStory(material: ArtDetails, id: string): ArtDetails {
+  const story = storyCache.get(id);
+  return story ? { ...material, story, storySource: 'chatgpt' } : material;
 }
 
 export function cachedDetails(work: Artwork): ArtDetails | null {
-  return cache.get(work.id) ?? null;
+  const material = materialCache.get(work.id);
+  return material ? withStory(material, work.id) : null;
 }
 
 const stripHtml = (html: string): string =>
@@ -158,23 +175,30 @@ async function guideStory(work: Artwork, text: string): Promise<string | null> {
 }
 
 /**
- * Details for an artwork. onUpdate fires once with the quick version (Wikipedia or museum text)
- * and again if ChatGPT's story arrives, so the screen never waits on the model.
+ * Details for an artwork. onUpdate fires with the quick version (Wikipedia or museum text)
+ * and again when ChatGPT's story arrives. A story is generated once per artwork and reused;
+ * it's only requested when none is cached and ChatGPT is connected.
  */
 export function artDetails(work: Artwork, onUpdate?: (details: ArtDetails) => void): Promise<ArtDetails> {
-  const known = cache.get(work.id);
-  if (known) { onUpdate?.(known); return Promise.resolve(known); }
+  const known = cachedDetails(work);
+  if (known && (known.storySource === 'chatgpt' || !data.chatgpt.connected)) { onUpdate?.(known); return Promise.resolve(known); }
   const inFlight = pending.get(work.id);
   if (inFlight) return inFlight.then(details => { onUpdate?.(details); return details; });
   const job = (async (): Promise<ArtDetails> => {
-    const material = await sourceMaterial(work).catch((): SourceMaterial => ({ text: '', textSource: '', facts: [] }));
-    const quick: ArtDetails = { story: material.text ? excerpt(material.text) : '', storySource: material.textSource, facts: material.facts };
-    onUpdate?.(quick);
-    let storyFailed = false;
-    const story = await guideStory(work, material.text).catch(() => { storyFailed = true; return null; });
-    const final = story ? { ...quick, story, storySource: 'chatgpt' as const } : quick;
-    if (story) onUpdate?.(final);
-    if (!storyFailed) remember(work.id, final);
+    let material = materialCache.get(work.id) ?? null;
+    let sourceText = '';
+    if (!material || data.chatgpt.connected) {
+      const fetched = await sourceMaterial(work).catch((): SourceMaterial => ({ text: '', textSource: '', facts: [] }));
+      sourceText = fetched.text;
+      material = { story: fetched.text ? excerpt(fetched.text) : '', storySource: fetched.textSource, facts: fetched.facts };
+      if (fetched.text || fetched.facts.length) rememberIn(materialCache, materialCacheName, materialLimit, work.id, material);
+    }
+    onUpdate?.(material);
+    const story = await guideStory(work, sourceText).catch(() => null);
+    if (!story) return material;
+    rememberIn(storyCache, storyCacheName, storyLimit, work.id, story);
+    const final = withStory(material, work.id);
+    onUpdate?.(final);
     return final;
   })().finally(() => pending.delete(work.id));
   pending.set(work.id, job);

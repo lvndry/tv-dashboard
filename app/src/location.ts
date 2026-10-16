@@ -25,7 +25,7 @@ export async function autoDetectLocation(): Promise<boolean> {
     const ip = await fetchJson<{ success?: boolean; city?: string; region?: string; country?: string; latitude?: number; longitude?: number; timezone?: { id?: string } }>('https://ipwho.is/', 8000);
     if (ip?.success && ip.city && ip.latitude != null && ip.longitude != null) {
       writeCache('location', {
-        name: [ip.city, ip.region, ip.country].filter(Boolean).join(' '),
+        name: ip.city,
         latitude: Math.round(ip.latitude * 1000) / 1000,
         longitude: Math.round(ip.longitude * 1000) / 1000,
         timeZone: ip.timezone?.id ?? config.timeZone,

@@ -1,7 +1,9 @@
 import { config } from '../config';
 import { briefSignature, createBrief, type Brief } from './brief';
 import { connection } from './chatgpt';
+import { fetchParisEvents, type CityEvent } from './events';
 import { fetchFeed, mergeStories, type Story } from './news';
+import { fetchToday, fetchWeek, mergeLive, needsLiveUpdates, type Match } from './sports';
 import { readCache, settings, writeCache } from './store';
 import { fetchWeather, type Weather } from './weather';
 
@@ -15,6 +17,8 @@ export interface SourceStatus {
 const weatherCache = readCache<Weather>('weather');
 const newsCache = readCache<Story[]>('news');
 const briefCache = readCache<Brief>('brief');
+const sportsCache = readCache<Match[]>('sports');
+const eventsCache = readCache<CityEvent[]>('paris-events');
 
 export const data = {
   weather: weatherCache?.value ?? null,
@@ -25,6 +29,10 @@ export const data = {
   briefAt: briefCache?.savedAt ?? null as number | null,
   briefLoading: false,
   chatgpt: { connected: false, plan: null as string | null },
+  matches: sportsCache?.value ?? [] as Match[],
+  matchesAt: sportsCache?.savedAt ?? null as number | null,
+  events: eventsCache?.value ?? [] as CityEvent[],
+  eventsAt: eventsCache?.savedAt ?? null as number | null,
   status: new Map<string, SourceStatus>(),
 };
 
@@ -156,7 +164,69 @@ export function storyById(id: string): Story | undefined {
   return data.stories.find(story => story.id === id);
 }
 
+let sportsInFlight = false;
+
+export async function refreshSports(): Promise<void> {
+  if (sportsInFlight || !config.sports.leagues.length) return;
+  sportsInFlight = true;
+  try {
+    const { matches, failures } = await fetchWeek();
+    if (matches.length || !failures.length) {
+      data.matches = matches;
+      data.matchesAt = Date.now();
+      writeCache('sports', data.matches, data.matchesAt);
+    }
+    setStatus('sports', {
+      name: 'Football · ESPN',
+      ok: failures.length < config.sports.leagues.length,
+      updatedAt: data.matchesAt,
+      detail: failures.length ? `${matches.length} matches; ${failures.join(', ')} unreachable` : `${matches.length} matches this week`,
+    });
+  } finally {
+    sportsInFlight = false;
+    notify();
+  }
+}
+
+let liveInFlight = false;
+
+/** While a match is on, today's scores are refreshed every minute. */
+async function refreshLiveScores(): Promise<void> {
+  const leagues = needsLiveUpdates(data.matches);
+  if (liveInFlight || !leagues.length) return;
+  liveInFlight = true;
+  try {
+    data.matches = mergeLive(data.matches, await fetchToday(leagues));
+    writeCache('sports', data.matches, data.matchesAt ?? Date.now());
+  } catch (error) {
+    setStatus('sports', { name: 'Football · ESPN', ok: false, updatedAt: data.matchesAt, detail: `live scores: ${message(error)}` });
+  } finally {
+    liveInFlight = false;
+    notify();
+  }
+}
+
+let eventsInFlight = false;
+
+export async function refreshEvents(): Promise<void> {
+  if (eventsInFlight || !config.parisEvents) return;
+  eventsInFlight = true;
+  try {
+    data.events = await fetchParisEvents();
+    data.eventsAt = Date.now();
+    writeCache('paris-events', data.events, data.eventsAt);
+    setStatus('events', { name: 'Paris · Que faire à Paris', ok: true, updatedAt: data.eventsAt, detail: `${data.events.length} picks this week` });
+  } catch (error) {
+    setStatus('events', { name: 'Paris · Que faire à Paris', ok: false, updatedAt: data.eventsAt, detail: message(error) });
+  } finally {
+    eventsInFlight = false;
+    notify();
+  }
+}
+
 const weatherMaxAgeMs = 10 * 60000;
+const sportsMaxAgeMs = 60 * 60000;
+const eventsMaxAgeMs = 3 * 3600000;
 const newsMaxAgeMs = 15 * 60000;
 
 export function refreshStale(): void {
@@ -164,9 +234,14 @@ export function refreshStale(): void {
   if (data.weatherAt === null || now - data.weatherAt > weatherMaxAgeMs) void refreshWeather();
   if (data.newsAt === null || now - data.newsAt > newsMaxAgeMs) void refreshNews();
   else void refreshBrief();
+  if (data.matchesAt === null || now - data.matchesAt > sportsMaxAgeMs) void refreshSports();
+  else void refreshLiveScores();
+  if (data.eventsAt === null || now - data.eventsAt > eventsMaxAgeMs) void refreshEvents();
 }
 
 export function refreshAll(): void {
   void refreshWeather();
   void refreshNews();
+  void refreshSports();
+  void refreshEvents();
 }
