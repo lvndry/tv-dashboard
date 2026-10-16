@@ -6,7 +6,7 @@ import { data, onDataChange, refreshAll, refreshConnection, refreshStale } from 
 import { byId, toast, watchImages } from './dom';
 import { initApps, onInputRequested, onShortcutRequested } from './launcher';
 import { autoDetectLocation, currentLocation } from './location';
-import { actionFor, exitApp, hideHdmi, isTizen, registerRemoteKeys, showHdmi, type Action } from './platform';
+import { actionFor, exitApp, hideHdmi, isTizen, registerRemoteKeys, holdSystemScreenSaver, showHdmi, type Action } from './platform';
 import { settings } from './store';
 import { clockParts, dateLabel, relativeAge, timeLabel, zoned } from './time';
 import { condition } from './weather';
@@ -243,6 +243,7 @@ watchImages();
 fitStage();
 applyAccent();
 registerRemoteKeys();
+holdSystemScreenSaver();
 scheduleClock();
 renderDateline();
 home.render();

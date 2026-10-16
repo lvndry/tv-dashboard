@@ -1,6 +1,7 @@
 import type { AppEntry } from './configTypes';
 
 declare const tizen: any;
+declare const webapis: any;
 
 export const isTizen = typeof tizen !== 'undefined' && !!tizen.application;
 
@@ -123,4 +124,14 @@ export function hideHdmi(): Promise<void> {
   return new Promise(resolve => {
     tizen.tvwindow.hide(() => resolve(), () => resolve(), 'MAIN');
   });
+}
+
+/** Keeps the TV's own screensaver from covering the app; the app's ambient mode takes its place. */
+export function holdSystemScreenSaver(): void {
+  try {
+    const common = typeof webapis === 'undefined' ? null : webapis.appcommon;
+    common?.setScreenSaver(common.AppCommonScreenSaverState.SCREEN_SAVER_OFF, () => undefined, () => undefined);
+  } catch {
+    // Older firmware without appcommon keeps the system screensaver.
+  }
 }
