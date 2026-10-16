@@ -14,8 +14,11 @@ export const config = defineConfig({
 
   rack: [
     { kind: 'app', id: 'canal', name: 'Canal+', dot: '#E8E8E8', match: ['canal+', 'canal plus', 'mycanal'] },
-    { kind: 'app', id: 'stremio', name: 'Stremio', dot: '#8A5CF6', match: ['stremio'] },
-    { kind: 'app', id: 'tizentube', name: 'TizenTube', dot: '#FF3B30', match: ['tizentube'] },
+    // Sideloaded apps keep their own Tizen package ids, which don't match by
+    // display name. Pin appId to the real id (the one you installed it with)
+    // so the chip never reports "not installed".
+    { kind: 'app', id: 'stremio', name: 'Stremio', dot: '#8A5CF6', match: ['stremio'], appId: 'newslO9NqF' },
+    { kind: 'app', id: 'tizentube', name: 'TizenTube', dot: '#FF3B30', match: ['tizentube', 'youtube tv'], appId: 'tUb3Xq7Lm9' },
     { kind: 'app', id: 'youtube', name: 'YouTube', dot: '#FF4E45', match: ['youtube'], appId: '111299001912' },
     { kind: 'input', id: 'ps5', name: 'PS5', dot: '#3D7BFF' },
     { kind: 'shortcut', id: 'news', name: 'News', dot: '#F2DE6B', target: 'news' },
@@ -32,6 +35,33 @@ export const config = defineConfig({
     { id: 'ars', name: 'Ars Technica', section: 'Tech', url: 'https://feeds.arstechnica.com/arstechnica/index' },
     { id: 'numerama', name: 'Numerama', section: 'Tech', url: 'https://www.numerama.com/feed/' },
   ],
+
+  // Ambient mode shows public-domain art, from ancient Egypt to Romanticism.
+  art: {
+    until: 1850,
+    museums: [
+      { name: 'Louvre', city: 'Paris', wikidata: 'Q19675', minSitelinks: 4 },
+      { name: 'British Museum', city: 'London', wikidata: 'Q6373', minSitelinks: 2 },
+      { name: 'Musée du quai Branly', city: 'Paris', wikidata: 'Q167863', minSitelinks: 0 },
+      { name: 'Egyptian Museum', city: 'Cairo', wikidata: 'Q201219', minSitelinks: 0 },
+      { name: 'Grand Egyptian Museum', city: 'Giza', wikidata: 'Q2583681', minSitelinks: 0 },
+      { name: 'Museo Egizio', city: 'Turin', wikidata: 'Q19877', minSitelinks: 0 },
+      { name: 'Neues Museum', city: 'Berlin', wikidata: 'Q157316', minSitelinks: 0 },
+      { name: 'Acropolis Museum', city: 'Athens', wikidata: 'Q421084', minSitelinks: 0 },
+      { name: 'Vatican Museums', city: 'Vatican City', wikidata: 'Q182955', minSitelinks: 2 },
+      { name: 'Uffizi', city: 'Florence', wikidata: 'Q51252', minSitelinks: 3 },
+      { name: 'Prado', city: 'Madrid', wikidata: 'Q160112', minSitelinks: 4 },
+      { name: 'National Gallery', city: 'London', wikidata: 'Q180788', minSitelinks: 4 },
+      { name: 'Rijksmuseum', city: 'Amsterdam', wikidata: 'Q190804', minSitelinks: 4 },
+      { name: 'Kunsthistorisches Museum', city: 'Vienna', wikidata: 'Q95569', minSitelinks: 4 },
+      { name: 'Hermitage', city: 'Saint Petersburg', wikidata: 'Q132783', minSitelinks: 4 },
+      { name: 'Musée Guimet', city: 'Paris', wikidata: 'Q860994', minSitelinks: 0 },
+    ],
+    egyptianTombs: true,
+    // Ancient Near East, Africa/Oceania/Americas, Asia, Egypt, European paintings and sculpture, Greek and Roman, Islamic, Medieval.
+    metDepartments: [3, 5, 6, 10, 11, 12, 13, 14, 17],
+    cleveland: true,
+  },
 
   brief: {
     model: 'gpt-6-luna',
