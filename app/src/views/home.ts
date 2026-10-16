@@ -287,8 +287,8 @@ export function createHome(openNews: (target?: { briefIndex?: number; storyId?: 
   function updateHint(): void {
     const phrase = phrases.find(item => item.id === focusedId);
     const parts = zone === 'rack'
-      ? ['◀ ▶ choose', 'OK open', '▲ back to the note']
-      : [phrase?.activate ? 'OK open' : '◀ ▶ read along', '▼ apps, news, settings'];
+      ? ['OK open', '▲ back']
+      : [phrase?.activate ? 'OK open' : '◀ ▶ read', '▼ apps'];
     hint.innerHTML = parts.map(part => `<span>${escapeHtml(part)}</span>`).join('');
   }
 

@@ -4,6 +4,17 @@ A home screen for a Samsung Tizen TV. It opens with a short letter (the weather 
 
 The look is the Bonsoir theme: ink-blue night, paper-coloured serif text, and a highlighter stroke that marks what the remote is pointing at, built to read from the sofa in a dim room.
 
+![The home screen: the clock, a greeting with the weather and the news as selectable phrases, a detail panel for the focused phrase, and the app rack](docs/screenshots/home.png)
+
+| | |
+| --- | --- |
+| ![A news story focused in the letter, with its summary in the margin](docs/screenshots/home-story.png) | ![The News view on the Brief tab, with a story list and a detail pane](docs/screenshots/news.png) |
+| **Focus a phrase** and the margin explains it: a story's summary, an hourly forecast, the week ahead. | **News** groups the day's headlines by section, with an AI-written brief when ChatGPT is connected. |
+| ![Pairing ChatGPT with a code shown on the TV](docs/screenshots/pairing.png) | ![Ambient mode: a large clock with one line about the weather](docs/screenshots/ambient.png) |
+| **Connect ChatGPT** by entering a code on your phone. The sign-in goes straight to the TV and is stored there encrypted. | **Ambient mode** takes over when the remote has been idle, built from the live weather and headlines. |
+
+<sub>Screenshots use fictional news and weather. Regenerate them with `bun run screenshots`.</sub>
+
 ## Getting started
 
 ```sh
@@ -20,6 +31,7 @@ bun run dev        # preview at http://localhost:5173 with live rebuilds
 bun run typecheck
 bun run pkg        # build and sign app/dist/tv-dashboard.wgt
 bun run deploy     # pkg, then install on the TV through the homebrew service
+bun run screenshots  # regenerate docs/screenshots with fictional data (needs Google Chrome)
 ```
 
 The dev server proxies feed requests, because most RSS feeds send no CORS headers. On the TV, the `<access origin="*">` rule in `config.xml` allows those requests directly.

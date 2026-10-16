@@ -29,19 +29,19 @@ export function contentSecurityPolicy() {
   ].join('; ');
 }
 
-export function stageStatic() {
+export function stageStatic(target = dist) {
   ensureConfig();
-  mkdirSync(dist, { recursive: true });
-  for (const file of ['style.css', 'icon.png']) cpSync(join(app, file), join(dist, file));
+  mkdirSync(target, { recursive: true });
+  for (const file of ['style.css', 'icon.png']) cpSync(join(app, file), join(target, file));
   const policy = contentSecurityPolicy();
   const html = readFileSync(join(app, 'index.html'), 'utf8').replace('<!--CSP-->', `<meta http-equiv="Content-Security-Policy" content="${policy}">`);
-  writeFileSync(join(dist, 'index.html'), html);
+  writeFileSync(join(target, 'index.html'), html);
   const widget = readFileSync(join(app, 'config.xml'), 'utf8').replace('<!--CSP-->', `<tizen:content-security-policy>${policy}</tizen:content-security-policy>`);
-  writeFileSync(join(dist, 'config.xml'), widget);
-  cpSync(join(app, 'fonts'), join(dist, 'fonts'), { recursive: true });
+  writeFileSync(join(target, 'config.xml'), widget);
+  cpSync(join(app, 'fonts'), join(target, 'fonts'), { recursive: true });
 }
 
-export function buildOptions() {
+export function buildOptions(target = dist) {
   return {
     entryPoints: [join(app, 'src', 'main.ts')],
     bundle: true,
@@ -49,7 +49,7 @@ export function buildOptions() {
     sourcemap: false,
     target: 'chrome85',
     format: 'iife',
-    outfile: join(dist, 'app.js'),
+    outfile: join(target, 'app.js'),
     define: {
       __BUILD_TIME__: JSON.stringify(new Date().toLocaleString('en-GB', { timeZone: 'Europe/Paris', dateStyle: 'medium', timeStyle: 'short' })),
     },
