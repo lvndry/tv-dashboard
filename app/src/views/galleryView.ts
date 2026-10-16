@@ -3,7 +3,7 @@ import { captionHtml, fillsScreen } from '../artCaption';
 import { artDetails, cachedDetails } from '../artDetails';
 import { byId, escapeHtml, toast } from '../dom';
 import type { Action } from '../platform';
-import { settings } from '../store';
+import { settings, updateSettings } from '../store';
 import type { View } from './view';
 
 type Tab = { id: 'all' | 'favourites' | Era; label: string; works: Artwork[] };
@@ -38,6 +38,7 @@ export function createGalleryView(close: () => void): View {
   /** The viewer is a slideshow: each work stays up for the ambient interval, then the next one comes in. */
   function scheduleNext(): void {
     clearTimeout(slideshowTimer);
+    if (!settings.slideshow) return;
     slideshowTimer = setTimeout(() => {
       if (zone !== 'viewer') return;
       const works = currentWorks();
@@ -209,7 +210,11 @@ export function createGalleryView(close: () => void): View {
           toast(added ? 'Added to favourites. It will come up more often in ambient mode.' : 'Removed from favourites');
           renderViewerCaption();
         }
-      } else if (action === 'back' || action === 'up' || action === 'down') closeViewer();
+      } else if (action === 'down') {
+        updateSettings({ slideshow: !settings.slideshow });
+        toast(settings.slideshow ? `Slideshow on: a new work every ${settings.artSeconds < 60 ? `${settings.artSeconds} s` : `${settings.artSeconds / 60} min`}` : 'Slideshow off');
+        scheduleNext();
+      } else if (action === 'back' || action === 'up') closeViewer();
       return true;
     }
     if (zone === 'tabs') {

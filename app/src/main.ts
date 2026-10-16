@@ -5,6 +5,7 @@ import { refreshArt } from './art';
 import { data, onDataChange, refreshAll, refreshConnection, refreshStale } from './data';
 import { byId, toast, watchImages } from './dom';
 import { initApps, onInputRequested, onShortcutRequested } from './launcher';
+import { currentLocation } from './location';
 import { actionFor, exitApp, hideHdmi, isTizen, registerRemoteKeys, showHdmi, type Action } from './platform';
 import { settings } from './store';
 import { clockParts, dateLabel, relativeAge, timeLabel } from './time';
@@ -81,7 +82,7 @@ function scheduleClock(): void {
 function renderDateline(): void {
   const weather = data.weather;
   const sky = weather ? `${weather.current.temp}° · ${condition(weather.current.code, weather.current.isDay).label.toLowerCase()}` : '';
-  byId('placeline').textContent = [config.place, sky].filter(Boolean).join(' · ');
+  byId('placeline').textContent = [currentLocation().name, sky].filter(Boolean).join(' · ');
   const failures = [...data.status.values()].filter(status => status.ok === false);
   const freshness = byId('freshness');
   const lastUpdate = Math.max(data.weatherAt ?? 0, data.newsAt ?? 0);
@@ -137,8 +138,19 @@ function handleGlobal(action: Action): boolean {
   return false;
 }
 
-document.addEventListener('keydown', event => {
+const inputActions: Action[] = ['up', 'down', 'ok', 'back'];
+
+/** In a text box, letters type and Backspace deletes; only navigation keys act on the app. */
+function actionInTextBox(event: KeyboardEvent): Action | null {
+  if (event.keyCode === 65376) return 'ok';
+  if (event.keyCode === 65385) return 'back';
+  if (event.keyCode === 8 || event.keyCode === 37 || event.keyCode === 39) return null;
   const action = actionFor(event);
+  return action && inputActions.includes(action) ? action : null;
+}
+
+document.addEventListener('keydown', event => {
+  const action = event.target instanceof HTMLInputElement ? actionInTextBox(event) : actionFor(event);
   if (action) event.preventDefault();
   resetIdle();
   if (hdmiActive) {

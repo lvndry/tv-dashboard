@@ -10,7 +10,7 @@ const app = join(root, 'app');
 export const dist = join(app, 'dist');
 
 const fixedOrigins = [
-  'https://api.open-meteo.com', 'https://auth.openai.com', 'https://chatgpt.com',
+  'https://api.open-meteo.com', 'https://geocoding-api.open-meteo.com', 'https://auth.openai.com', 'https://chatgpt.com',
   'https://query.wikidata.org', 'https://collectionapi.metmuseum.org', 'https://openaccess-api.clevelandart.org',
   'https://www.wikidata.org', 'https://en.wikipedia.org', 'https://fr.wikipedia.org',
 ];

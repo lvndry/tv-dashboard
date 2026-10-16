@@ -3,6 +3,7 @@ import { nextArtwork, type LoadedArtwork } from './art';
 import { captionHtml, fillsScreen } from './artCaption';
 import { artDetails } from './artDetails';
 import { data } from './data';
+import { shortPlace } from './location';
 import { byId, escapeHtml, shorten } from './dom';
 import { settings } from './store';
 import { timeLabel, zoned } from './time';
@@ -15,7 +16,7 @@ function ambientLines(): string[] {
   const weather = data.weather;
   if (weather) {
     const now = weather.current;
-    lines.push(`${now.temp}° and ${condition(now.code, now.isDay).state} in ${config.place.split(' ')[0]}.`);
+    lines.push(`${now.temp}° and ${condition(now.code, now.isDay).state} in ${shortPlace()}.`);
     lines.push(`${capitalize(rainPhrase(rainOutlook(weather)))}.`);
     const sunset = nextSunset(weather);
     if (sunset && sunset - Date.now() < 6 * 3600000) lines.push(`The sun sets at ${timeLabel(sunset)}.`);
