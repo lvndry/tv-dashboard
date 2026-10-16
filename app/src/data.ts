@@ -1,6 +1,7 @@
 import { config } from '../config';
 import { briefSignature, createBrief, type Brief } from './brief';
 import { connection } from './chatgpt';
+import { fetchDiscover, type DiscoverStory } from './discover';
 import { fetchParisEvents, type CityEvent } from './events';
 import { perplexityAvailable } from './perplexity';
 import { fetchFeed, mergeStories, type Story } from './news';
@@ -19,6 +20,7 @@ const weatherCache = readCache<Weather>('weather');
 const newsCache = readCache<Story[]>('news');
 const briefCache = readCache<Brief>('brief');
 const sportsCache = readCache<Match[]>('sports');
+const discoverCache = readCache<DiscoverStory[]>('discover');
 const eventsCache = readCache<CityEvent[]>('paris-events');
 
 export const data = {
@@ -30,6 +32,8 @@ export const data = {
   briefAt: briefCache?.savedAt ?? null as number | null,
   briefLoading: false,
   chatgpt: { connected: false, plan: null as string | null },
+  discover: (discoverCache?.value ?? [] as DiscoverStory[]).filter(story => Date.now() - story.published < 48 * 3600000),
+  discoverAt: discoverCache?.savedAt ?? null as number | null,
   matches: sportsCache?.value ?? [] as Match[],
   matchesAt: sportsCache?.savedAt ?? null as number | null,
   events: eventsCache?.value ?? [] as CityEvent[],
@@ -127,7 +131,8 @@ export function briefState(): 'unavailable' | 'off' | 'loading' | 'ready' | 'err
 }
 
 export async function refreshBrief(force = false): Promise<void> {
-    if (!perplexityAvailable() || !settings.briefEnabled || data.briefLoading || !data.stories.length) return;
+    // While Discover's top stories are coming in, the paid brief would duplicate them.
+    if (!perplexityAvailable() || !settings.briefEnabled || data.briefLoading || !data.stories.length || data.discover.length) return;
   const fresh = data.briefAt !== null && Date.now() - data.briefAt < briefMaxAgeMs;
   const sameHeadlines = data.brief?.signature === briefSignature(data.stories);
   if (!force && (fresh || sameHeadlines)) return;
@@ -159,6 +164,24 @@ export async function refreshConnection(): Promise<void> {
 
 export function storyById(id: string): Story | undefined {
   return data.stories.find(story => story.id === id);
+}
+
+let discoverInFlight = false;
+
+export async function refreshDiscover(): Promise<void> {
+  if (discoverInFlight) return;
+  discoverInFlight = true;
+  try {
+    data.discover = await fetchDiscover();
+    data.discoverAt = Date.now();
+    writeCache('discover', data.discover, data.discoverAt);
+    setStatus('discover', { name: 'Top stories · Perplexity Discover', ok: true, updatedAt: data.discoverAt, detail: `${data.discover.length} stories from the last 48 hours` });
+  } catch (error) {
+    setStatus('discover', { name: 'Top stories · Perplexity Discover', ok: false, updatedAt: data.discoverAt, detail: message(error) });
+  } finally {
+    discoverInFlight = false;
+    notify();
+  }
 }
 
 let sportsInFlight = false;
@@ -223,6 +246,7 @@ export async function refreshEvents(): Promise<void> {
 
 const weatherMaxAgeMs = 10 * 60000;
 const sportsMaxAgeMs = 60 * 60000;
+const discoverMaxAgeMs = 30 * 60000;
 const eventsMaxAgeMs = 3 * 3600000;
 const newsMaxAgeMs = 15 * 60000;
 
@@ -231,6 +255,7 @@ export function refreshStale(): void {
   if (data.weatherAt === null || now - data.weatherAt > weatherMaxAgeMs) void refreshWeather();
   if (data.newsAt === null || now - data.newsAt > newsMaxAgeMs) void refreshNews();
   else void refreshBrief();
+  if (data.discoverAt === null || now - data.discoverAt > discoverMaxAgeMs) void refreshDiscover();
   if (data.matchesAt === null || now - data.matchesAt > sportsMaxAgeMs) void refreshSports();
   else void refreshLiveScores();
   if (data.eventsAt === null || now - data.eventsAt > eventsMaxAgeMs) void refreshEvents();
@@ -239,6 +264,7 @@ export function refreshStale(): void {
 export function refreshAll(): void {
   void refreshWeather();
   void refreshNews();
+  void refreshDiscover();
   void refreshSports();
   void refreshEvents();
 }

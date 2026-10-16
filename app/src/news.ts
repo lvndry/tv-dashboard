@@ -98,7 +98,7 @@ function titleKey(title: string): string {
 }
 
 /** One list, newest first, with the same article from overlapping feeds kept once. */
-export function mergeStories(lists: Story[][], maxAgeMs = 3 * 86400000, now: number = Date.now()): Story[] {
+export function mergeStories(lists: Story[][], maxAgeMs = 2 * 86400000, now: number = Date.now()): Story[] {
   const seenLinks = new Set<string>();
   const seenTitles = new Set<string>();
   const merged: Story[] = [];

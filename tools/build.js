@@ -14,14 +14,19 @@ const fixedOrigins = [
   'https://site.api.espn.com', 'https://opendata.paris.fr',
   'https://query.wikidata.org', 'https://collectionapi.metmuseum.org', 'https://openaccess-api.clevelandart.org',
         'https://www.wikidata.org', 'https://en.wikipedia.org', 'https://fr.wikipedia.org', 'https://ipwho.is',
-  'https://api.perplexity.ai', 'https://r.jina.ai', 'https://www.youtube.com', 'https://www.youtube-nocookie.com', 'https://i.ytimg.com',
+  'https://api.perplexity.ai', 'https://www.perplexity.ai', 'https://r.jina.ai', 'https://www.youtube.com', 'https://www.youtube-nocookie.com', 'https://i.ytimg.com',
 ];
 
 /** connect-src is limited to the weather API, OpenAI, the art collections, and the feeds named in config.ts. */
 export function contentSecurityPolicy() {
   const configSource = readFileSync(join(app, 'config.ts'), 'utf8');
   const feedOrigins = [...configSource.matchAll(/url:\s*'(https:\/\/[^']+)'/g)].map(match => new URL(match[1]).origin);
-  const connect = ["'self'", ...new Set([...fixedOrigins, ...feedOrigins])].join(' ');
+  // Articles live on the feeds' sites (feeds.arstechnica.com links to arstechnica.com), so the reader may fetch any subdomain of each.
+  const articleOrigins = feedOrigins.flatMap(origin => {
+    const site = new URL(origin).hostname.split('.').slice(-2).join('.');
+    return [`https://${site}`, `https://*.${site}`];
+  });
+  const connect = ["'self'", ...new Set([...fixedOrigins, ...feedOrigins, ...articleOrigins])].join(' ');
   return [
     "default-src 'none'",
     "script-src 'self'",

@@ -3,17 +3,18 @@ import type { NewsSection } from '../configTypes';
 import type { BriefStory } from '../brief';
 import { briefState, data, storyById } from '../data';
 import { byId, escapeHtml, imageHtml, shorten, toast } from '../dom';
-import { fetchText } from '../net';
+import { readArticle } from '../articleReader';
+import type { DiscoverStory } from '../discover';
 import type { Story } from '../news';
-import { embedUrl, freshNewsVideos, type NewsVideo } from '../videoNews';
+import { embedUrl, latestNewsVideos, type NewsVideo } from '../videoNews';
 import { openUrl, type Action } from '../platform';
 import { settings } from '../store';
 import { relativeAge, timeLabel } from '../time';
 import type { View } from './view';
 
-type Tab = { id: 'brief'; label: string } | { id: 'latest'; label: string } | { id: 'videos'; label: string } | { id: 'section'; label: string; section: NewsSection };
+type Tab = { id: 'top'; label: string } | { id: 'brief'; label: string } | { id: 'latest'; label: string } | { id: 'videos'; label: string } | { id: 'section'; label: string; section: NewsSection };
 
-type Item = { kind: 'brief'; story: BriefStory; index: number } | { kind: 'story'; story: Story } | { kind: 'video'; video: NewsVideo; index: number };
+type Item = { kind: 'discover'; story: DiscoverStory } | { kind: 'brief'; story: BriefStory; index: number } | { kind: 'story'; story: Story } | { kind: 'video'; video: NewsVideo; index: number };
 
 const sectionOrder: NewsSection[] = ['France', 'World', 'Tech', 'Culture', 'Sport'];
 
@@ -24,42 +25,19 @@ const hostOf = (url: string): string => {
 const readerCache = new Map<string, { at: number; html: string }>();
 const READER_TTL = 6 * 3600 * 1000;
 
-/** r.jina.ai returns front-matter (Title/URL Source/Markdown Content:) then markdown. */
-function readerToHtml(markdown: string, story: Story): string {
-  const body = markdown
-    .split('\n')
-    .filter(line => !/^(Title:|URL Source:|Markdown Content:|Published:|Author:)\s*/.test(line))
-    .join('\n')
-    .trim();
-  // Paragraphs: split on blank lines. Keep <img> lines as images, drop pure URLs & nav junk.
-  const blocks = body.split(/\n{2,}/);
-  const rendered = blocks
-    .map(block => {
-      const text = block.replace(/!\[[^\]]*\]\(([^)\s]+)\)/g, '<img class="rimg" src="$1" alt="" loading="lazy"/>')
-        .replace(/\[([^\]]+)\]\([^)\s]+\)/g, '$1') // keep link text, drop URLs
-        .replace(/^#{1,6}\s+/gm, '')
-        .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
-        .replace(/\*([^*]+)\*/g, '<i>$1</i>')
-        .trim();
-      if (!text) return '';
-      if (text.startsWith('<img')) return `<div class="rimgwrap">${text}</div>`;
-      if (/^https?:\/\//.test(text) && text.length < 200) return '';
-      // drop site chrome: very short all-caps lines that look like nav
-      if (text.length < 12 && /[A-ZÀ-Ý]{4,}/.test(text) && !/\d/.test(text)) return '';
-      return `<p>${escapeHtml(text).replace(/<\s*img[^>]*>/g, m => m)}</p>`;
-    })
-    .filter(Boolean)
-    .slice(0, 40)
-    .join('');
+function readerHtml(story: Story, body: string): string {
   return `<article class="reader">
     <div class="kicker">${escapeHtml(story.source)} · ${escapeHtml(story.section)} · ${relativeAge(story.published)}</div>
     <h2>${escapeHtml(story.title)}</h2>
-    ${rendered || '<p class="summary">Nothing readable came back from the article.</p>'}
+    ${body}
     <div class="ok"><kbd>OK</kbd>Open on ${escapeHtml(hostOf(story.link))} · <kbd>Back</kbd>Close</div>
   </article>`;
 }
 
-export function createNewsView(close: () => void): View & { focusTarget(target?: { briefIndex?: number; storyId?: string }): void } {
+/** Bullets keep their **bold** phrases: the text is escaped first, then only those markers become <b>. */
+const boldMarkdown = (text: string): string => escapeHtml(text).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+
+export function createNewsView(close: () => void): View & { focusTarget(target?: { briefIndex?: number; storyId?: string; discoverId?: string }): void } {
   const element = byId('news');
   const tabsNode = byId('news-tabs');
   const listNode = byId('news-list');
@@ -71,7 +49,7 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
   let tabIndex = 0;
   let listIndex = 0;
   let sourceIndex = 0;
-  let zone: 'tabs' | 'list' | 'sources' = 'list';
+  let zone: 'tabs' | 'list' | 'sources' | 'detail' = 'list';
   let detailKey = '';
   let readerFor: Story | null = null;
   let readerLoading = false;
@@ -82,7 +60,7 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
   async function loadVideos(force = false): Promise<void> {
     if (Date.now() - videosAt < 30 * 60 * 1000 && videos.length && !force) return;
     try {
-      videos = await freshNewsVideos('actualités France', 6);
+      videos = await latestNewsVideos(['actualités France', 'info France', 'actualité internationale', 'journal télévisé'], 8);
       videosAt = Date.now();
     } catch {
       // YouTube unreachable: the tab shows its empty state, the feeds are unaffected.
@@ -91,7 +69,8 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
 
   function computeTabs(): Tab[] {
     const result: Tab[] = [];
-    if (settings.briefEnabled && (data.brief || briefState() === 'loading')) result.push({ id: 'brief', label: 'Brief' });
+    if (data.discover.length) result.push({ id: 'top', label: 'Top stories' });
+    if (!data.discover.length && settings.briefEnabled && (data.brief || briefState() === 'loading')) result.push({ id: 'brief', label: 'Brief' });
     result.push({ id: 'latest', label: 'Latest' });
     result.push({ id: 'videos', label: "À l'instant" });
     for (const section of sectionOrder) {
@@ -103,6 +82,7 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
   function items(): Item[] {
     const tab = tabs[tabIndex];
     if (!tab) return [];
+    if (tab.id === 'top') return data.discover.map(story => ({ kind: 'discover', story }));
     if (tab.id === 'brief') return (data.brief?.stories ?? []).map((story, index) => ({ kind: 'brief', story, index }));
     if (tab.id === 'videos') return videos.map((video, index) => ({ kind: 'video', video, index }));
     const stories = tab.id === 'latest' ? data.stories : data.stories.filter(story => story.section === tab.section);
@@ -116,7 +96,9 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
   function renderSubtitle(): void {
     const sources = new Set(config.news.map(feed => feed.name)).size;
     const tab = tabs[tabIndex];
-    if (tab?.id === 'brief') {
+    if (tab?.id === 'top') {
+      subtitle.textContent = `Perplexity Discover · the last 48 hours${data.discoverAt ? ` · updated ${relativeAge(data.discoverAt)}` : ''}`;
+    } else if (tab?.id === 'brief') {
       subtitle.textContent = data.briefLoading && !data.brief
         ? `Perplexity is reading ${Math.min(40, data.stories.length)} headlines…`
         : `Written ${data.briefAt ? `at ${timeLabel(data.briefAt)}` : ''} by Perplexity from ${sources} sources${data.briefLoading ? ' · updating…' : ''}`;
@@ -142,6 +124,12 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
       return;
     }
     listTrack.innerHTML = list.map((item, index) => {
+      if (item.kind === 'discover') {
+        return `<div class="row" data-focus="row" data-index="${index}">
+          ${imageHtml(item.story.thumb, 'rthumb')}
+          <div class="rtext"><div class="rtitle">${escapeHtml(item.story.title)}</div>
+          <div class="rmeta">${relativeAge(item.story.published)}${item.story.sourceCount ? ` · ${item.story.sourceCount} sources` : ''}</div></div></div>`;
+      }
       if (item.kind === 'brief') {
         const sources = sourcesOf(item.story);
         return `<div class="row" data-focus="row" data-index="${index}">
@@ -164,6 +152,18 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
   }
 
   function detailHtml(item: Item): string {
+    if (item.kind === 'discover') {
+      const story = item.story;
+      return `
+        ${imageHtml(story.image, 'hero')}
+        <div class="kicker">Perplexity Discover · ${relativeAge(story.published)}${story.sourceCount ? ` · ${story.sourceCount} sources` : ''}</div>
+        <h2>${escapeHtml(story.title)}</h2>
+        ${story.summary ? `<p class="summary">${escapeHtml(story.summary)}</p>` : ''}
+        ${story.bullets.length ? `<ul class="bullets">${story.bullets.map(bullet => `<li>${boldMarkdown(bullet)}</li>`).join('')}</ul>` : ''}
+        ${story.description ? `<p class="summary">${escapeHtml(story.description)}</p>` : ''}
+        ${story.sourceHosts.length ? `<div class="nmeta">Sources include ${escapeHtml(story.sourceHosts.join(', '))}</div>` : ''}
+        <div class="ok"><kbd>◀</kbd>Focus to scroll${story.url ? ' · <kbd>OK</kbd>Open on Perplexity' : ''}</div>`;
+    }
     if (item.kind === 'brief') {
       const sources = sourcesOf(item.story);
       return `
@@ -181,7 +181,7 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
       const v = item.video;
       const dur = v.duration === 'short' ? 'Short' : v.duration;
       return `
-        <div class="vplayer"><iframe class="vframe" src="${embedUrl(v.id)}" title="${escapeHtml(v.title)}"
+        <div class="vplayer"><iframe class="vframe" src="${embedUrl(v.id)}" title="${escapeHtml(v.title)}" referrerpolicy="strict-origin-when-cross-origin"
           allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
         <div class="kicker">${escapeHtml(v.channel)} · ${escapeHtml(dur)}${v.published ? ` · ${escapeHtml(v.published)}` : ''} · YouTube</div>
         <h2>${escapeHtml(v.title)}</h2>
@@ -243,6 +243,23 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
     const sourceNodes = Array.from(detailNode.querySelectorAll<HTMLElement>('.source'));
     sourceNodes.forEach((node, index) => node.classList.toggle('on', zone === 'sources' && index === sourceIndex));
     element.dataset.zone = zone;
+    detailNode.classList.toggle('focused', zone === 'detail');
+  }
+
+  /** The article pane scrolls when it has focus; the remote's ▲ ▼ move it a screenful at a time. */
+  function scrollDetail(direction: 1 | -1): void {
+    detailNode.scrollBy({ top: direction * Math.round(detailNode.clientHeight * 0.7), behavior: 'smooth' });
+  }
+
+  function focusDetail(): void {
+    zone = 'detail';
+    applyFocus();
+  }
+
+  function leaveDetail(): void {
+    zone = 'list';
+    detailNode.scrollTop = 0;
+    applyFocus();
   }
 
   function render(): void {
@@ -271,34 +288,35 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
   }
 
   async function openReader(story: Story): Promise<void> {
+    readerFor = story;
+    zone = 'detail';
+    detailNode.scrollTop = 0;
     const cached = readerCache.get(story.id);
     if (cached && Date.now() - cached.at < READER_TTL) {
-      readerFor = story;
       readerLoading = false;
-      detailNode.classList.remove('in');
-      void detailNode.offsetWidth;
       detailNode.innerHTML = cached.html;
-      detailNode.classList.add('in');
+      applyFocus();
       return;
     }
-    readerFor = story;
     readerLoading = true;
     toast(`Reading ${hostOf(story.link)}…`);
     detailNode.classList.remove('in');
     void detailNode.offsetWidth;
-    detailNode.innerHTML = `<article class="reader"><div class="kicker">${escapeHtml(story.source)} · ${escapeHtml(story.section)}</div><h2>${escapeHtml(story.title)}</h2><div class="empty">Fetching the article…</div></article>`;
+    detailNode.innerHTML = readerHtml(story, '<div class="empty">Fetching the article…</div>');
     detailNode.classList.add('in');
+    applyFocus();
     try {
-      const markdown = await fetchText(`https://r.jina.ai/${encodeURIComponent(story.link)}`, 20000);
-      const html = readerToHtml(markdown, story);
+      const html = readerHtml(story, await readArticle(story.link));
       readerCache.set(story.id, { at: Date.now(), html });
-      if (readerFor?.id !== story.id) return; // moved on while loading
+      if (readerFor?.id !== story.id) return;
       detailNode.innerHTML = html;
     } catch (error) {
       if (readerFor?.id !== story.id) return;
       const message = error instanceof Error ? error.message : String(error);
       toast(`Couldn't read the article (${message}). Opening on ${hostOf(story.link)} instead…`, 'error');
       readerFor = null;
+      zone = 'list';
+      applyFocus();
       try { await openUrl(story.link); } catch { /* no browser handler on the TV */ }
     } finally {
       readerLoading = false;
@@ -309,6 +327,10 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
     const item = items()[listIndex];
     if (!item) return;
     if (item.kind === 'video') return; // OK on a video = play it (iframe already autoplaying)
+    if (item.kind === 'discover') {
+      if (item.story.url) openUrl(item.story.url).catch(error => toast(`Couldn't open the browser: ${error instanceof Error ? error.message : String(error)}`, 'error'));
+      return;
+    }
     if (zone === 'sources' && item.kind === 'brief') {
       const source = sourcesOf(item.story)[sourceIndex];
       if (source) void openReader(source);
@@ -328,13 +350,27 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
     const count = items().length;
     const onVideos = tabs[tabIndex]?.id === 'videos';
     if (readerFor) {
-      if (action === 'back') {
+      if (action === 'up') scrollDetail(-1);
+      else if (action === 'down') scrollDetail(1);
+      else if (action === 'pageUp') scrollDetail(-1);
+      else if (action === 'pageDown') scrollDetail(1);
+      else if (action === 'back' || action === 'right') {
         readerFor = null;
         detailKey = '';
+        zone = 'list';
+        detailNode.scrollTop = 0;
         renderDetail(true);
+        applyFocus();
       } else if (action === 'ok' && !readerLoading) {
         void openUrl(readerFor.link);
       }
+      return true;
+    }
+    if (zone === 'detail') {
+      if (action === 'up' || action === 'pageUp') scrollDetail(-1);
+      else if (action === 'down' || action === 'pageDown') scrollDetail(1);
+      else if (action === 'right' || action === 'back') leaveDetail();
+      else if (action === 'ok') activate();
       return true;
     }
     if (zone === 'tabs') {
@@ -359,12 +395,11 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
     else if (action === 'pageDown') { listIndex = Math.min(count - 1, listIndex + 5); applyFocus(); }
     else if (action === 'pageUp') { listIndex = Math.max(0, listIndex - 5); applyFocus(); }
     else if (action === 'left') {
-      if (onVideos && listIndex > 0) { listIndex--; applyFocus(); }
-      else selectTab(tabIndex - 1);
+      if (onVideos) { if (listIndex > 0) { listIndex--; applyFocus(); } }
+      else if (count) focusDetail();
     }
     else if (action === 'right') {
       if (onVideos && listIndex < count - 1) { listIndex++; applyFocus(); }
-      else selectTab(tabIndex + 1);
     }
     else if (action === 'ok') activate();
     else if (action === 'back') close();
@@ -378,12 +413,15 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
     else if (target.dataset.focus === 'source') { zone = 'sources'; sourceIndex = index; applyFocus(); }
   }
 
-  function focusTarget(target?: { briefIndex?: number; storyId?: string }): void {
+  function focusTarget(target?: { briefIndex?: number; storyId?: string; discoverId?: string }): void {
     tabs = computeTabs();
     zone = 'list';
     readerFor = null;
-    if (target?.briefIndex !== undefined && tabs[0]?.id === 'brief') {
+    if (target?.discoverId && tabs[0]?.id === 'top') {
       tabIndex = 0;
+      listIndex = Math.max(0, data.discover.findIndex(story => story.id === target.discoverId));
+    } else if (target?.briefIndex !== undefined && tabs.some(tab => tab.id === 'brief')) {
+      tabIndex = tabs.findIndex(tab => tab.id === 'brief');
       listIndex = target.briefIndex;
     } else if (target?.storyId) {
       tabIndex = tabs.findIndex(tab => tab.id === 'latest');

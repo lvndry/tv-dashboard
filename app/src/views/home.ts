@@ -5,6 +5,7 @@ import { data, storyById } from '../data';
 import { afterPaint, byId, escapeHtml, imageHtml, shorten } from '../dom';
 import { availability, openRackEntry } from '../launcher';
 import { currentLocation } from '../location';
+import type { DiscoverStory } from '../discover';
 import type { CityEvent } from '../events';
 import type { Story } from '../news';
 import { interest, isToday, type Match } from '../sports';
@@ -206,6 +207,15 @@ function matchNote(match: Match): string {
     ${okLine('See all the football')}`;
 }
 
+function discoverNote(story: DiscoverStory): string {
+  return `
+    ${imageHtml(story.thumb || story.image, 'thumb')}
+    <div class="kicker">Perplexity Discover · ${relativeAge(story.published)}</div>
+    <div class="ntitle">${escapeHtml(story.title)}</div>
+    ${story.summary ? `<div class="nmeta">${escapeHtml(story.summary)}</div>` : ''}
+    ${okLine('Read the story')}`;
+}
+
 function eventNote(event: CityEvent): string {
   return `
     ${imageHtml(event.image, 'thumb')}
@@ -237,7 +247,7 @@ function newsSpread(stories: Story[], count: number): Story[] {
 }
 
 export function createHome(
-  openNews: (target?: { briefIndex?: number; storyId?: string }) => void,
+  openNews: (target?: { briefIndex?: number; storyId?: string; discoverId?: string }) => void,
   openWhatsOn: (target: { tab: 'football' | 'paris'; id?: string }) => void,
 ): View {
   const element = byId('home');
@@ -288,9 +298,15 @@ export function createHome(
     const football = footballLine();
     if (football) result.push(football);
 
-    const brief = settings.briefEnabled ? data.brief : null;
+    const discover = data.discover.slice(0, 3);
+    const brief = discover.length ? null : settings.briefEnabled ? data.brief : null;
     const allNews: Phrase = { id: 'news-all', text: brief ? 'read the whole brief' : 'see all the news', note: allNewsNote, activate: () => openNews() };
-    if (brief && brief.stories.length) {
+    if (discover.length) {
+      const items = discover.map((story): Phrase => ({
+        id: `discover-${story.id}`, text: story.short, note: () => discoverNote(story), activate: () => openNews({ discoverId: story.id }),
+      }));
+      result.push(['Top stories: ', ...joinList(items), ', or ', { ...allNews, text: 'see all the news' }, '.']);
+    } else if (brief && brief.stories.length) {
       const items = brief.stories.slice(0, 5).map((story, index): Phrase => ({
         id: `brief-${index}`, text: story.short, note: () => briefStoryNote(story), activate: () => openNews({ briefIndex: index }),
       }));
