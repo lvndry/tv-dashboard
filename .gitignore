@@ -1,0 +1,7 @@
+node_modules/
+app/dist/
+.env.local
+.DS_Store
+.env
+app/config.ts
+design/
