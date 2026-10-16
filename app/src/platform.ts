@@ -108,14 +108,28 @@ export function exitApp(): void {
 export function showHdmi(port: number): Promise<void> {
   if (!isTizen) return Promise.resolve();
   if (!tizen.tvwindow) return Promise.reject(new Error('TV window API unavailable'));
-  return new Promise((resolve, reject) => {
-    tizen.tvwindow.getAvailableSources((sources: { type: string; number: number }[]) => {
-      const source = sources.find(candidate => candidate.type === 'HDMI' && candidate.number === port);
-      if (!source) { reject(new Error(`HDMI ${port} not found`)); return; }
-      tizen.tvwindow.setSource(source, () => {
-        tizen.tvwindow.show(() => resolve(), (error: Error) => reject(error), ['0px', '0px', '1920px', '1080px'], 'MAIN');
-      }, (error: Error) => reject(error), 'MAIN');
-    }, (error: Error) => reject(error));
+  return hdmiSource(port).then(source => new Promise((resolve, reject) => {
+    tizen.tvwindow.setSource(source, () => {
+      tizen.tvwindow.show(() => resolve(), (error: Error) => reject(error), ['0px', '0px', '1920px', '1080px'], 'MAIN');
+    }, (error: Error) => reject(error), 'MAIN');
+  }));
+}
+
+type VideoSource = { type: string; number: number };
+
+/** The TV lists its inputs through systeminfo's VIDEOSOURCE property, not through tvwindow. */
+function hdmiSource(port: number): Promise<VideoSource> {
+  const fallback = { type: 'HDMI', number: port };
+  if (!tizen.systeminfo?.getPropertyValue) return Promise.resolve(fallback);
+  return new Promise(resolve => {
+    try {
+      tizen.systeminfo.getPropertyValue('VIDEOSOURCE', (info: { connected?: VideoSource[]; disconnected?: VideoSource[] }) => {
+        const all = [...(info.connected ?? []), ...(info.disconnected ?? [])];
+        resolve(all.find(candidate => candidate.type === 'HDMI' && candidate.number === port) ?? fallback);
+      }, () => resolve(fallback));
+    } catch {
+      resolve(fallback);
+    }
   });
 }
 
