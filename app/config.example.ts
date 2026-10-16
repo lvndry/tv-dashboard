@@ -36,6 +36,16 @@ export const config = defineConfig({
     { id: 'lemonde-sport', name: 'Le Monde', section: 'Sport', url: 'https://www.lemonde.fr/sport/rss_full.xml' },
     { id: 'ars', name: 'Ars Technica', section: 'Tech', url: 'https://feeds.arstechnica.com/arstechnica/index' },
     { id: 'numerama', name: 'Numerama', section: 'Tech', url: 'https://www.numerama.com/feed/' },
+    { id: 'franceinfo-france', name: 'franceinfo', section: 'France', url: 'https://www.francetvinfo.fr/france.rss' },
+    { id: 'franceinfo-monde', name: 'franceinfo', section: 'World', url: 'https://www.francetvinfo.fr/monde.rss' },
+    { id: 'bbc-world', name: 'BBC News', section: 'World', url: 'https://feeds.bbci.co.uk/news/world/rss.xml' },
+    { id: 'courrier', name: 'Courrier international', section: 'World', url: 'https://www.courrierinternational.com/feed/all/rss.xml' },
+    { id: 'verge', name: 'The Verge', section: 'Tech', url: 'https://www.theverge.com/rss/index.xml' },
+    { id: 'wired', name: 'Wired', section: 'Tech', url: 'https://www.wired.com/feed/rss' },
+    { id: 'lemonde-pixels', name: 'Le Monde', section: 'Tech', url: 'https://www.lemonde.fr/pixels/rss_full.xml' },
+    { id: 'franceinfo-culture', name: 'franceinfo', section: 'Culture', url: 'https://www.francetvinfo.fr/culture.rss' },
+    { id: 'telerama', name: 'Télérama', section: 'Culture', url: 'https://www.telerama.fr/rss/une.xml' },
+    { id: 'franceinfo-sports', name: 'franceinfo', section: 'Sport', url: 'https://www.francetvinfo.fr/sports.rss' },
   ],
 
   sports: {

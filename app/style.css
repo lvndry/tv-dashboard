@@ -449,3 +449,22 @@ body.hdmi #stage > :not(.toast) { visibility: hidden; }
 .reader p b { color: var(--paper); font-weight: 600; }
 .reader .rimgwrap { margin: 6px 0 24px; }
 .reader .rimg { max-width: 100%; max-height: 340px; width: auto; border-radius: 12px; display: block; margin: 0 auto; }
+
+/* Article pane: scrollable when focused (◀ from the list), with a highlighter bar to show it has focus. */
+.news-detail { overflow-y: auto; scrollbar-width: none; padding-left: 0; transition: padding-left .25s var(--ease), box-shadow .25s var(--ease);
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 70px), transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 70px), transparent 100%); }
+.news-detail::-webkit-scrollbar { display: none; }
+.news-detail.focused { padding-left: 26px; box-shadow: inset 5px 0 0 var(--marker); }
+.news-detail .summary { -webkit-line-clamp: unset; display: block; overflow: visible; margin-bottom: 18px; }
+.news-detail .bullets { margin: 6px 0 22px; padding-left: 26px; }
+.news-detail .bullets li { font-size: 23px; line-height: 1.5; color: var(--paper-soft); margin-bottom: 12px; }
+.news-detail .bullets b { color: var(--paper); font-weight: 600; }
+.news-detail .ok kbd { margin-right: 4px; }
+.news-detail .ok { padding-bottom: 60px; }
+.reader h3 { font-family: var(--serif); font-weight: 400; font-size: 32px; line-height: 1.25; margin: 30px 0 14px; color: var(--paper); }
+.reader blockquote { margin: 10px 0 22px; padding-left: 22px; border-left: 3px solid var(--rule); font-family: var(--serif); font-style: italic; font-size: 26px; line-height: 1.5; color: var(--paper-soft); }
+.vposter { position: relative; }
+.vposter .hero { margin-bottom: 0; }
+.vplay.big { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 110px; height: 110px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 44px; color: var(--ink); background: var(--marker); box-shadow: 0 20px 60px rgba(0, 0, 0, .5); }
+

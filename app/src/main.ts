@@ -58,7 +58,7 @@ function openWhatsOn(target: { tab: 'football' | 'paris'; id?: string } = { tab:
   showView('whatson');
 }
 
-function openNews(target?: { briefIndex?: number; storyId?: string }): void {
+function openNews(target?: { briefIndex?: number; storyId?: string; discoverId?: string }): void {
   news.focusTarget(target);
   showView('news');
 }

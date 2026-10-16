@@ -81,6 +81,24 @@ export function openUrl(url: string): Promise<void> {
   });
 }
 
+const youtubeAppId = '111299001912';
+
+/**
+ * Plays a video in the TV's YouTube app. Embedded players refuse to run inside a TV app
+ * (it has no web origin), so playback is handed to the app with a deep link.
+ */
+export function playOnYouTube(videoId: string): Promise<void> {
+  if (!isTizen) {
+    window.open(`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`, '_blank', 'noopener');
+    return Promise.resolve();
+  }
+  return new Promise((resolve, reject) => {
+    const payload = new tizen.ApplicationControlData('PAYLOAD', [JSON.stringify({ values: `v=${videoId}` })]);
+    const control = new tizen.ApplicationControl('http://tizen.org/appcontrol/operation/view', null, null, null, [payload]);
+    tizen.application.launchAppControl(control, youtubeAppId, () => resolve(), (error: Error) => reject(error));
+  });
+}
+
 export function exitApp(): void {
   if (isTizen) tizen.application.getCurrentApplication().exit();
 }
