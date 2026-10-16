@@ -169,7 +169,7 @@ Plain, warm prose. No lists, no headings, no quotation of the source. Reply with
 async function guideStory(work: Artwork, text: string): Promise<string | null> {
   if (!data.chatgpt.connected || text.length < 200) return null;
   const input = JSON.stringify({ title: work.title, maker: work.maker, date: work.date, museum: work.place, source: text.slice(0, 3000) });
-  const reply = await completeJson({ model: config.brief.model, instructions: storyInstructions, input, schema: storySchema });
+  const reply = await completeJson({ model: config.art.storyModel ?? 'gpt-6-luna', instructions: storyInstructions, input, schema: storySchema });
   const story = (JSON.parse(reply.trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, '')) as { story?: unknown }).story;
   return typeof story === 'string' && story.trim() ? story.trim() : null;
 }
