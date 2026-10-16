@@ -7,7 +7,7 @@ import { readArticle } from '../articleReader';
 import type { DiscoverStory } from '../discover';
 import type { Story } from '../news';
 import { embedUrl, latestNewsVideos, type NewsVideo } from '../videoNews';
-import { openUrl, type Action } from '../platform';
+import { isTizen, openUrl, playOnYouTube, type Action } from '../platform';
 import { settings } from '../store';
 import { relativeAge, timeLabel } from '../time';
 import type { View } from './view';
@@ -86,7 +86,7 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
     if (tab.id === 'brief') return (data.brief?.stories ?? []).map((story, index) => ({ kind: 'brief', story, index }));
     if (tab.id === 'videos') return videos.map((video, index) => ({ kind: 'video', video, index }));
     const stories = tab.id === 'latest' ? data.stories : data.stories.filter(story => story.section === tab.section);
-    return stories.slice(0, 40).map(story => ({ kind: 'story', story }));
+    return stories.slice(0, 60).map(story => ({ kind: 'story', story }));
   }
 
   function sourcesOf(story: BriefStory): Story[] {
@@ -181,11 +181,11 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
       const v = item.video;
       const dur = v.duration === 'short' ? 'Short' : v.duration;
       return `
-        <div class="vplayer"><iframe class="vframe" src="${embedUrl(v.id)}" title="${escapeHtml(v.title)}" referrerpolicy="strict-origin-when-cross-origin"
-          allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
+        ${isTizen ? `<div class="vplayer vposter">${imageHtml(v.thumb, 'hero')}<span class="vplay big">▶</span></div>` : `<div class="vplayer"><iframe class="vframe" src="${embedUrl(v.id)}" title="${escapeHtml(v.title)}" referrerpolicy="strict-origin-when-cross-origin"
+          allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>`}
         <div class="kicker">${escapeHtml(v.channel)} · ${escapeHtml(dur)}${v.published ? ` · ${escapeHtml(v.published)}` : ''} · YouTube</div>
         <h2>${escapeHtml(v.title)}</h2>
-        <div class="ok"><kbd>OK</kbd>Play · <kbd>Right</kbd>Next clip · <kbd>Left</kbd>Previous</div>`;
+        <div class="ok"><kbd>OK</kbd>${isTizen ? 'Play on YouTube' : 'Play'} · <kbd>▶</kbd>Next clip · <kbd>◀</kbd>Previous</div>`;
     }
     const story = item.story;
     return `
@@ -326,7 +326,12 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
   function activate(): void {
     const item = items()[listIndex];
     if (!item) return;
-    if (item.kind === 'video') return; // OK on a video = play it (iframe already autoplaying)
+    if (item.kind === 'video') {
+      if (!isTizen) return; // the inline player is already playing
+      toast('Opening YouTube…');
+      playOnYouTube(item.video.id).catch(error => toast(`YouTube didn't open: ${error instanceof Error ? error.message : String(error)}`, 'error'));
+      return;
+    }
     if (item.kind === 'discover') {
       if (item.story.url) openUrl(item.story.url).catch(error => toast(`Couldn't open the browser: ${error instanceof Error ? error.message : String(error)}`, 'error'));
       return;
