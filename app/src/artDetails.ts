@@ -133,7 +133,7 @@ async function sourceMaterial(work: Artwork): Promise<SourceMaterial> {
 }
 
 /** First paragraph of the source text, cut at a sentence end near the limit. */
-function excerpt(text: string, limit = 650): string {
+function excerpt(text: string, limit = 1100): string {
   const paragraph = text.split('\n').find(line => line.trim().length > 60) ?? text;
   if (paragraph.length <= limit) return paragraph.trim();
   const cut = paragraph.slice(0, limit);

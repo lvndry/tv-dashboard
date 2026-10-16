@@ -373,7 +373,7 @@ body.ambient-art .acaption.out { opacity: 0; }
 .afacts dd { margin: 0; color: var(--paper-soft); }
 .asource { margin-top: 16px; font-size: 15px; color: var(--paper-faint); letter-spacing: .04em; }
 .viewer .acaption { top: 140px; bottom: 80px; max-width: 620px; display: flex; flex-direction: column; justify-content: flex-end; }
-.viewer .astory { -webkit-line-clamp: 11; font-size: 22px; }
+.viewer .astory { display: block; -webkit-line-clamp: unset; overflow: visible; font-size: 22px; }
 
 /* HDMI passthrough: the TV window sits behind a transparent page */
 body.hdmi, body.hdmi #stage, html:has(body.hdmi) { background: transparent !important; }
