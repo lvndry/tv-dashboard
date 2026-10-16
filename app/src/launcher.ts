@@ -28,13 +28,13 @@ export function availability(entry: RackEntry): AppAvailability {
 }
 
 let hdmiHandler: ((entry: RackEntry) => void) | null = null;
-let shortcutHandler: ((target: 'news' | 'settings') => void) | null = null;
+let shortcutHandler: ((target: 'news' | 'gallery' | 'settings') => void) | null = null;
 
 export function onInputRequested(handler: (entry: RackEntry) => void): void {
   hdmiHandler = handler;
 }
 
-export function onShortcutRequested(handler: (target: 'news' | 'settings') => void): void {
+export function onShortcutRequested(handler: (target: 'news' | 'gallery' | 'settings') => void): void {
   shortcutHandler = handler;
 }
 

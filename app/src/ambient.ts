@@ -1,5 +1,7 @@
 import { config } from '../config';
 import { nextArtwork, type LoadedArtwork } from './art';
+import { captionHtml, fillsScreen } from './artCaption';
+import { artDetails } from './artDetails';
 import { data } from './data';
 import { byId, escapeHtml, shorten } from './dom';
 import { settings } from './store';
@@ -35,12 +37,6 @@ let artSession = 0;
 let frontFrame = 0;
 let prepared: Promise<LoadedArtwork | null> | null = null;
 
-/** Paintings close to the screen's shape fill it; everything else is framed whole over a blurred copy. */
-function fillsScreen(work: LoadedArtwork): boolean {
-  const ratio = work.width / Math.max(1, work.height);
-  return ratio > 1.3 && ratio < 2.2;
-}
-
 function showArtwork(work: LoadedArtwork): void {
   const frames = [byId('art-a'), byId('art-b')];
   const incoming = frames[1 - frontFrame]!;
@@ -48,10 +44,10 @@ function showArtwork(work: LoadedArtwork): void {
   const url = escapeHtml(work.image);
   const panX = Math.round(Math.random() * 6 - 3);
   const panY = Math.round(Math.random() * 4 - 2);
-  incoming.className = `art-frame ${fillsScreen(work) ? 'fill' : 'framed'}`;
+  incoming.className = `art-frame ${fillsScreen(work.width, work.height) ? 'fill' : 'framed'}`;
   incoming.style.setProperty('--pan-x', `${panX}%`);
   incoming.style.setProperty('--pan-y', `${panY}%`);
-  incoming.style.setProperty('--art-duration', `${settings.artMinutes * 60 + 10}s`);
+  incoming.style.setProperty('--art-duration', `${settings.artSeconds + 10}s`);
   incoming.innerHTML = `<img class="art-backdrop" src="${url}" alt=""><img class="art-image" src="${url}" alt="">`;
   void incoming.offsetWidth;
   incoming.classList.add('visible');
@@ -60,12 +56,13 @@ function showArtwork(work: LoadedArtwork): void {
 
   const caption = byId('acaption');
   caption.classList.add('out');
+  caption.dataset.work = work.id;
   setTimeout(() => {
-    caption.innerHTML = `
-      <div class="atitle">${escapeHtml(work.title)}</div>
-      <div class="ameta">${escapeHtml([work.maker, work.date].filter(Boolean).join(' · '))}</div>
-      <div class="aplace">${escapeHtml(work.place)}</div>`;
+    caption.innerHTML = captionHtml(work, null, 'ambient');
     caption.classList.remove('out');
+    void artDetails(work, details => {
+      if (caption.dataset.work === work.id) caption.innerHTML = captionHtml(work, details, 'ambient');
+    });
   }, 900);
 }
 
@@ -77,7 +74,7 @@ function scheduleArt(session: number): void {
     if (session !== artSession) return;
     if (work) showArtwork(work);
     scheduleArt(session);
-  }, settings.artMinutes * 60000);
+  }, settings.artSeconds * 1000);
 }
 
 async function startArt(session: number): Promise<void> {

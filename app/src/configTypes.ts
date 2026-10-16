@@ -33,7 +33,7 @@ export interface ShortcutEntry {
   id: string;
   name: string;
   dot: string;
-  target: 'news' | 'settings';
+  target: 'news' | 'gallery' | 'settings';
 }
 
 export type RackEntry = AppEntry | InputEntry | ShortcutEntry;
@@ -49,6 +49,8 @@ export interface ArtMuseum {
 }
 
 export interface ArtConfig {
+  /** Earliest year shown; negative years are BCE. -3500 starts at early Egypt and Mesopotamia. */
+  from: number;
   /** Latest year shown; 1850 stops at Romanticism. */
   until: number;
   museums: ArtMuseum[];

@@ -10,6 +10,7 @@ import { settings } from './store';
 import { clockParts, dateLabel, relativeAge, timeLabel } from './time';
 import { condition } from './weather';
 import { createHome } from './views/home';
+import { createGalleryView } from './views/galleryView';
 import { createNewsView } from './views/newsView';
 import { createSettingsView } from './views/settingsView';
 import type { View } from './views/view';
@@ -27,11 +28,12 @@ function applyAccent(): void {
   document.documentElement.style.setProperty('--marker', settings.accent);
 }
 
-let current: 'home' | 'news' = 'home';
+let current: 'home' | 'news' | 'gallery' = 'home';
 let settingsOpen = false;
 
 const home = createHome(target => openNews(target));
 const news = createNewsView(() => showView('home'));
+const gallery = createGalleryView(() => showView('home'));
 const settingsView = createSettingsView(() => toggleSettings(false), () => {
   applyAccent();
   renderClock();
@@ -39,12 +41,12 @@ const settingsView = createSettingsView(() => toggleSettings(false), () => {
   home.render();
 });
 
-const activeView = (): View => settingsOpen ? settingsView : current === 'home' ? home : news;
+const activeView = (): View => settingsOpen ? settingsView : current === 'home' ? home : current === 'news' ? news : gallery;
 
-function showView(name: 'home' | 'news'): void {
+function showView(name: 'home' | 'news' | 'gallery'): void {
   current = name;
   document.body.dataset.view = name;
-  (name === 'home' ? home : news).enter();
+  (name === 'home' ? home : name === 'news' ? news : gallery).enter();
 }
 
 function openNews(target?: { briefIndex?: number; storyId?: string }): void {
@@ -62,7 +64,7 @@ function renderClock(): void {
   const now = Date.now();
   const parts = clockParts(now, settings.clock24);
   const html = `${parts.hours}<span class="colon">:</span>${parts.minutes}${parts.suffix ? `<small>${parts.suffix}</small>` : ''}`;
-  for (const id of ['clock', 'aclock', 'news-clock']) {
+  for (const id of ['clock', 'aclock', 'news-clock', 'gallery-clock']) {
     const node = byId(id);
     if (node.innerHTML !== html) node.innerHTML = html;
   }
@@ -206,7 +208,11 @@ onDataChange(() => {
 });
 
 onInputRequested(entry => void enterHdmi(entry));
-onShortcutRequested(target => { if (target === 'news') openNews(); else toggleSettings(true); });
+onShortcutRequested(target => {
+  if (target === 'news') openNews();
+  else if (target === 'gallery') showView('gallery');
+  else toggleSettings(true);
+});
 
 watchImages();
 fitStage();
