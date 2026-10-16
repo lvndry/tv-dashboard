@@ -36,7 +36,7 @@ export async function searchPlaces(query: string): Promise<PlaceResult[]> {
     latitude: Math.round(place.latitude * 1000) / 1000,
     longitude: Math.round(place.longitude * 1000) / 1000,
     timeZone: place.timezone ?? config.timeZone,
-    detail: [place.postcodes?.[0], place.admin2 ?? place.admin1, place.country].filter(Boolean).join(' · '),
+      detail: [place.postcodes?.[0], place.admin1 === 'Paris' ? place.admin2 : place.admin1, place.country].filter(Boolean).join(' · '),
   }));
 }
 
