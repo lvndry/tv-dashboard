@@ -30,7 +30,7 @@ interface Pool {
 const poolMaxAgeMs = 7 * 86400000;
 const recentLimit = 150;
 
-const poolCacheName = 'art.v2';
+const poolCacheName = 'art.v3';
 let pool: Pool = readCache<Pool>(poolCacheName)?.value ?? { works: [], metIds: [], metWorks: [] };
 let poolAt = readCache<Pool>(poolCacheName)?.savedAt ?? 0;
 let loading: Promise<void> | null = null;
@@ -53,7 +53,9 @@ function cleanTitle(label: string): string {
 }
 
 function readableLabel(value: string | undefined): string {
-  return value && !/^(https?:|_:|t\d+$)/.test(value) && !/^Q\d+$/.test(value) ? value : '';
+  if (!value || /^(https?:|_:|t\d+$)/.test(value) || /^Q\d+$/.test(value)) return '';
+  const withoutPrefix = value.replace(/^culture of (the )?/i, '');
+  return withoutPrefix.charAt(0).toUpperCase() + withoutPrefix.slice(1);
 }
 
 interface SparqlRow { [name: string]: { value: string } | undefined }

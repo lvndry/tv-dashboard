@@ -119,8 +119,9 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
     },
     {
       label: 'New artwork every',
-      value: () => `${settings.artMinutes} min`,
-      change: step => updateSettings({ artMinutes: cycle(artIntervals, settings.artMinutes, step) }),
+      value: () => settings.artSeconds < 60 ? `${settings.artSeconds} s` : `${settings.artSeconds / 60} min`,
+      change: step => updateSettings({ artSeconds: cycle(artIntervals, settings.artSeconds, step) }),
+      note: () => 'In ambient mode and the gallery slideshow.',
     },
     {
       label: 'Highlighter',

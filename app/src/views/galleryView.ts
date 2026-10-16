@@ -1,6 +1,9 @@
 import { eraOf, eras, favouriteWorks, galleryWorks, isFavourite, loadArtwork, refreshArt, toggleFavourite, type Artwork, type Era } from '../art';
+import { captionHtml, fillsScreen } from '../artCaption';
+import { artDetails, cachedDetails } from '../artDetails';
 import { byId, escapeHtml, toast } from '../dom';
 import type { Action } from '../platform';
+import { settings } from '../store';
 import type { View } from './view';
 
 type Tab = { id: 'all' | 'favourites' | Era; label: string; works: Artwork[] };
@@ -30,6 +33,18 @@ export function createGalleryView(close: () => void): View {
   let zone: 'tabs' | 'grid' | 'viewer' = 'grid';
   let viewerFront = 0;
   let viewerRequest = 0;
+  let slideshowTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /** The viewer is a slideshow: each work stays up for the ambient interval, then the next one comes in. */
+  function scheduleNext(): void {
+    clearTimeout(slideshowTimer);
+    slideshowTimer = setTimeout(() => {
+      if (zone !== 'viewer') return;
+      const works = currentWorks();
+      index = works.length ? (index + 1) % works.length : 0;
+      void showInViewer();
+    }, settings.artSeconds * 1000);
+  }
   let loading = false;
 
   function computeTabs(): Tab[] {
@@ -135,10 +150,9 @@ export function createGalleryView(close: () => void): View {
     const frames = [byId('viewer-a'), byId('viewer-b')];
     const incoming = frames[1 - viewerFront]!;
     const outgoing = frames[viewerFront]!;
-    const ratio = loaded.width / Math.max(1, loaded.height);
     const url = escapeHtml(loaded.image);
-    incoming.className = `art-frame ${ratio > 1.3 && ratio < 2.2 ? 'fill' : 'framed'}`;
-    incoming.style.setProperty('--art-duration', '120s');
+    incoming.className = `art-frame ${fillsScreen(loaded.width, loaded.height) ? 'fill' : 'framed'}`;
+    incoming.style.setProperty('--art-duration', `${settings.artSeconds + 10}s`);
     incoming.style.setProperty('--pan-x', '0%');
     incoming.style.setProperty('--pan-y', '0%');
     incoming.innerHTML = `<img class="art-backdrop" src="${url}" alt=""><img class="art-image" src="${url}" alt="">`;
@@ -148,6 +162,7 @@ export function createGalleryView(close: () => void): View {
     viewerFront = 1 - viewerFront;
     renderViewerCaption();
     viewerCaption.classList.remove('out');
+    scheduleNext();
     const works = currentWorks();
     for (const neighbour of [works[index + 1], works[index - 1]]) {
       if (neighbour) new Image().src = neighbour.image;
@@ -157,10 +172,11 @@ export function createGalleryView(close: () => void): View {
   function renderViewerCaption(): void {
     const work = currentWorks()[index];
     if (!work) return;
-    viewerCaption.innerHTML = `
-      <div class="atitle">${escapeHtml(work.title)}${isFavourite(work) ? ' <span class="heart">♥</span>' : ''}</div>
-      <div class="ameta">${escapeHtml([work.maker, work.date].filter(Boolean).join(' · '))}</div>
-      <div class="aplace">${escapeHtml(work.place)}</div>`;
+    viewerCaption.dataset.work = work.id;
+    viewerCaption.innerHTML = captionHtml(work, cachedDetails(work), 'viewer');
+    void artDetails(work, details => {
+      if (viewerCaption.dataset.work === work.id && zone === 'viewer') viewerCaption.innerHTML = captionHtml(work, details, 'viewer');
+    });
   }
 
   function openViewer(): void {
@@ -174,6 +190,7 @@ export function createGalleryView(close: () => void): View {
   function closeViewer(): void {
     zone = 'grid';
     viewerRequest++;
+    clearTimeout(slideshowTimer);
     viewer.classList.remove('open');
     byId('viewer-a').classList.remove('visible');
     byId('viewer-b').classList.remove('visible');

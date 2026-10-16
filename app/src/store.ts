@@ -8,12 +8,13 @@ export const accents = [
 
 export const idleChoices = [0, 1, 2, 3, 5, 10, 15, 30];
 
-export const artIntervals = [2, 5, 10, 20];
+/** Seconds each artwork stays on screen, in ambient mode and the gallery slideshow. */
+export const artIntervals = [30, 60, 120, 300, 600];
 
 export interface Settings {
   idleMinutes: number;
   ambientStyle: 'art' | 'clock';
-  artMinutes: number;
+  artSeconds: number;
   accent: string;
   clock24: boolean;
   briefEnabled: boolean;
@@ -23,7 +24,7 @@ export interface Settings {
 const defaults: Settings = {
   idleMinutes: 3,
   ambientStyle: 'art',
-  artMinutes: 5,
+  artSeconds: 30,
   accent: '#F2DE6B',
   clock24: true,
   briefEnabled: true,
