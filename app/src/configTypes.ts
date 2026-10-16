@@ -33,7 +33,7 @@ export interface ShortcutEntry {
   id: string;
   name: string;
   dot: string;
-  target: 'news' | 'gallery' | 'settings';
+  target: 'news' | 'whatson' | 'gallery' | 'settings';
 }
 
 export type RackEntry = AppEntry | InputEntry | ShortcutEntry;
@@ -62,6 +62,13 @@ export interface ArtConfig {
   cleveland: boolean;
 }
 
+export interface SportsConfig {
+  /** ESPN league ids, for example fra.1 (Ligue 1), eng.1 (Premier League), esp.1 (La Liga), uefa.champions. */
+  leagues: { id: string; name: string }[];
+  /** Your teams: their matches come first. Matched against team names, e.g. "Paris Saint-Germain". */
+  teams: string[];
+}
+
 export interface Config {
   /** Used in the greeting ("Bonsoir, Sam."). Leave empty for a plain "Bonsoir." */
   name: string;
@@ -74,6 +81,10 @@ export interface Config {
   /** Left to right along the bottom of the home screen. */
   rack: RackEntry[];
   news: NewsFeed[];
+  /** Football fixtures and live scores. */
+  sports: SportsConfig;
+  /** The City of Paris's picks of the week's major events (Paris only). */
+  parisEvents: boolean;
   /** Ambient mode shows public-domain art from these collections. */
   art: ArtConfig;
   brief: {

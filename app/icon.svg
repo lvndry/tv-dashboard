@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="night" cx="22%" cy="12%" r="100%">
+      <stop offset="0" stop-color="#2C3558"/>
+      <stop offset=".55" stop-color="#121729"/>
+      <stop offset="1" stop-color="#070A13"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#FFE9A8" stop-opacity=".07"/>
+      <stop offset="1" stop-color="#F2DE6B" stop-opacity="0"/>
+    </radialGradient>
+    <mask id="crescent">
+      <rect width="512" height="512" fill="#fff"/>
+      <circle cx="300" cy="190" r="108" fill="#000"/>
+    </mask>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#night)"/>
+  <circle cx="250" cy="226" r="178" fill="url(#glow)"/>
+  <circle cx="244" cy="230" r="120" fill="#EFE7D6" mask="url(#crescent)"/>
+  <rect x="124" y="380" width="264" height="36" rx="18" fill="#F2DE6B" transform="rotate(-3 256 398)"/>
+</svg>

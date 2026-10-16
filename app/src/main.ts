@@ -8,10 +8,11 @@ import { initApps, onInputRequested, onShortcutRequested } from './launcher';
 import { autoDetectLocation, currentLocation } from './location';
 import { actionFor, exitApp, hideHdmi, isTizen, registerRemoteKeys, showHdmi, type Action } from './platform';
 import { settings } from './store';
-import { clockParts, dateLabel, relativeAge, timeLabel } from './time';
+import { clockParts, dateLabel, relativeAge, timeLabel, zoned } from './time';
 import { condition } from './weather';
 import { createHome } from './views/home';
 import { createGalleryView } from './views/galleryView';
+import { createWhatsOnView } from './views/whatsOnView';
 import { createNewsView } from './views/newsView';
 import { createSettingsView } from './views/settingsView';
 import type { View } from './views/view';
@@ -29,12 +30,13 @@ function applyAccent(): void {
   document.documentElement.style.setProperty('--marker', settings.accent);
 }
 
-let current: 'home' | 'news' | 'gallery' = 'home';
+let current: 'home' | 'news' | 'gallery' | 'whatson' = 'home';
 let settingsOpen = false;
 
-const home = createHome(target => openNews(target));
+const home = createHome(target => openNews(target), target => openWhatsOn(target));
 const news = createNewsView(() => showView('home'));
 const gallery = createGalleryView(() => showView('home'));
+const whatsOn = createWhatsOnView(() => showView('home'));
 const settingsView = createSettingsView(() => toggleSettings(false), () => {
   applyAccent();
   renderClock();
@@ -42,12 +44,18 @@ const settingsView = createSettingsView(() => toggleSettings(false), () => {
   home.render();
 });
 
-const activeView = (): View => settingsOpen ? settingsView : current === 'home' ? home : current === 'news' ? news : gallery;
+const viewFor = (name: typeof current): View => name === 'home' ? home : name === 'news' ? news : name === 'gallery' ? gallery : whatsOn;
+const activeView = (): View => settingsOpen ? settingsView : viewFor(current);
 
-function showView(name: 'home' | 'news' | 'gallery'): void {
+function showView(name: typeof current): void {
   current = name;
   document.body.dataset.view = name;
-  (name === 'home' ? home : name === 'news' ? news : gallery).enter();
+  viewFor(name).enter();
+}
+
+function openWhatsOn(target: { tab: 'football' | 'paris'; id?: string } = { tab: 'football' }): void {
+  whatsOn.focusOn(target);
+  showView('whatson');
 }
 
 function openNews(target?: { briefIndex?: number; storyId?: string }): void {
@@ -64,12 +72,14 @@ function toggleSettings(open: boolean): void {
 function renderClock(): void {
   const now = Date.now();
   const parts = clockParts(now, settings.clock24);
-  const html = `${parts.hours}<span class="colon">:</span>${parts.minutes}${parts.suffix ? `<small>${parts.suffix}</small>` : ''}`;
-  for (const id of ['clock', 'aclock', 'news-clock', 'gallery-clock']) {
+  const html = `${parts.hours}<span class="colon" aria-hidden="true"></span>${parts.minutes}${parts.suffix ? `<small>${parts.suffix}</small>` : ''}`;
+  for (const id of ['clock', 'aclock', 'news-clock', 'gallery-clock', 'whatson-clock']) {
     const node = byId(id);
     if (node.innerHTML !== html) node.innerHTML = html;
   }
   byId('date').textContent = dateLabel(now);
+  const hour = zoned(now).hour;
+  document.body.dataset.daypart = hour >= 5 && hour < 11 ? 'morning' : hour >= 11 && hour < 17 ? 'day' : hour >= 17 && hour < 23 ? 'evening' : 'night';
   byId('adate').textContent = dateLabel(now);
   home.refreshClock?.();
 }
@@ -215,6 +225,7 @@ window.addEventListener('offline', renderDateline);
 onDataChange(() => {
   home.render();
   if (current === 'news') news.render();
+  if (current === 'whatson') whatsOn.render();
   if (settingsOpen) settingsView.render();
   renderDateline();
 });
@@ -223,6 +234,7 @@ onInputRequested(entry => void enterHdmi(entry));
 onShortcutRequested(target => {
   if (target === 'news') openNews();
   else if (target === 'gallery') showView('gallery');
+  else if (target === 'whatson') openWhatsOn();
   else toggleSettings(true);
 });
 

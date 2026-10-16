@@ -49,7 +49,7 @@ function showArtwork(work: LoadedArtwork): void {
   incoming.style.setProperty('--pan-x', `${panX}%`);
   incoming.style.setProperty('--pan-y', `${panY}%`);
   incoming.style.setProperty('--art-duration', `${settings.artSeconds + 10}s`);
-  incoming.innerHTML = `<img class="art-backdrop" src="${url}" alt=""><img class="art-image" src="${url}" alt="">`;
+  incoming.innerHTML = `<img class="art-backdrop" src="${escapeHtml(work.thumb || work.image)}" alt=""><img class="art-image" src="${url}" alt="">`;
   void incoming.offsetWidth;
   incoming.classList.add('visible');
   outgoing.classList.remove('visible');

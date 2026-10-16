@@ -21,6 +21,7 @@ export const config = defineConfig({
     { kind: 'app', id: 'tizentube', name: 'TizenTube', dot: '#FF3B30', match: ['tizentube'], appId: 'xvvl3S1TT1.TizenTubeStandalone' },
     { kind: 'app', id: 'youtube', name: 'YouTube', dot: '#FF4E45', match: ['youtube'], appId: '111299001912' },
     { kind: 'input', id: 'ps5', name: 'PS5', dot: '#3D7BFF' },
+    { kind: 'shortcut', id: 'whatson', name: 'What’s on', dot: '#7FD1AE', target: 'whatson' },
     { kind: 'shortcut', id: 'news', name: 'News', dot: '#F2DE6B', target: 'news' },
     { kind: 'shortcut', id: 'gallery', name: 'Gallery', dot: '#C9A66B', target: 'gallery' },
     { kind: 'shortcut', id: 'settings', name: 'Settings', dot: '#9C9584', target: 'settings' },
@@ -36,6 +37,17 @@ export const config = defineConfig({
     { id: 'ars', name: 'Ars Technica', section: 'Tech', url: 'https://feeds.arstechnica.com/arstechnica/index' },
     { id: 'numerama', name: 'Numerama', section: 'Tech', url: 'https://www.numerama.com/feed/' },
   ],
+
+  sports: {
+    leagues: [
+      { id: 'uefa.champions', name: 'Champions League' },
+      { id: 'fra.1', name: 'Ligue 1' },
+      { id: 'eng.1', name: 'Premier League' },
+      { id: 'esp.1', name: 'La Liga' },
+    ],
+    teams: ['Paris Saint-Germain'],
+  },
+  parisEvents: true,
 
   // Ambient mode shows public-domain art, from ancient Egypt to Romanticism.
   art: {
