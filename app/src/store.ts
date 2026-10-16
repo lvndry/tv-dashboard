@@ -11,6 +11,13 @@ export const idleChoices = [0, 1, 2, 3, 5, 10, 15, 30];
 /** Seconds each artwork stays on screen, in ambient mode and the gallery slideshow. */
 export const artIntervals = [30, 60, 120, 300, 600];
 
+export interface SavedLocation {
+  name: string;
+  latitude: number;
+  longitude: number;
+  timeZone: string;
+}
+
 export interface Settings {
   idleMinutes: number;
   ambientStyle: 'art' | 'clock';
@@ -19,6 +26,10 @@ export interface Settings {
   clock24: boolean;
   briefEnabled: boolean;
   ps5Port: number;
+  /** Whether the gallery viewer advances by itself. */
+  slideshow: boolean;
+  /** Chosen on the TV; null means the location in config.ts. */
+  location: SavedLocation | null;
 }
 
 const defaults: Settings = {
@@ -29,6 +40,8 @@ const defaults: Settings = {
   clock24: true,
   briefEnabled: true,
   ps5Port: 1,
+  slideshow: false,
+  location: null,
 };
 
 const settingsKey = 'bonsoir.settings.v1';

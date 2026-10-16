@@ -56,7 +56,7 @@ News and Settings sit at the end of the rack along the bottom, so every remote c
 - `art`: where ambient mode finds its art (see below).
 - `brief`: the ChatGPT model, language and refresh interval for the news brief.
 
-Ambient delay, highlighter colour, clock format, console HDMI port and the ChatGPT connection are set on the TV itself, in Settings.
+Ambient delay, artwork interval, gallery slideshow, highlighter colour, clock format, console HDMI port, the ChatGPT connection and the weather location are set on the TV itself, in Settings. For the weather location, type a neighbourhood, town or postcode with the TV keyboard and pick the match; it's saved on the TV and overrides `place`, `latitude` and `longitude` from the config.
 
 ## Art in ambient mode
 
@@ -69,7 +69,7 @@ The collection is about 2,800 works, gathered without any API key:
 - **The Met's** curated highlights across its ancient, African, Asian, Islamic, medieval and European departments.
 - **The Cleveland Museum of Art's** open-access highlights.
 
-To browse the collection, open **Gallery** from the rack: a chronological grid with tabs for each era and your favourites. OK shows a work full-screen, ◀ ▶ step through, and OK again favourites it; favourites come up more often in ambient mode.
+To browse the collection, open **Gallery** from the rack: a chronological grid with tabs for each era and your favourites. OK shows a work full-screen with its story (from Wikipedia or the museum, retold by ChatGPT when connected) and facts such as material and size. ◀ ▶ step through, OK favourites it, and ▼ turns the slideshow on or off (off by default; it uses the New artwork every interval). Favourites come up more often in ambient mode.
 
 Add or remove museums in `art.museums` (any museum with a Wikidata id works), move `art.from` and `art.until` to change the period (3500 BCE to 1850 by default), or switch to the plain clock in Settings → Ambient style. The list is fetched once a week and cached on the TV.
 

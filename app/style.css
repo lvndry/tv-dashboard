@@ -257,8 +257,10 @@ body.ambient .view { opacity: 0 !important; transition: opacity .9s var(--ease-i
 .sheet-panel {
   position: absolute; top: 0; right: 0; bottom: 0; width: 820px; padding: 64px 80px 48px;
   background: linear-gradient(180deg, #161b2e, #10141f); border-left: 1px solid var(--rule);
-  transform: translateX(100%); transition: transform .5s var(--ease); overflow: hidden;
+  transform: translateX(100%); transition: transform .5s var(--ease); overflow-y: auto; scrollbar-width: none;
 }
+.sheet-panel::-webkit-scrollbar { display: none; }
+#settings.pairing-open .sheet-panel, #settings.location-open .sheet-panel { overflow: hidden; }
 body.settings-open .sheet { pointer-events: auto; }
 body.settings-open .sheet::before { opacity: 1; }
 body.settings-open .sheet-panel { transform: none; }
@@ -294,6 +296,22 @@ body.settings-open .sheet-panel { transform: none; }
 .pair-wait .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--marker); animation: pulse 1.4s var(--ease-io) infinite; }
 @keyframes pulse { 50% { opacity: .25; transform: scale(.7); } }
 .pair-note { margin-top: 18px; font-size: 19px; line-height: 1.5; color: var(--paper-dim); max-width: 600px; }
+
+/* weather location picker */
+#settings.location-open .srows, #settings.location-open .sstatus { opacity: 0; pointer-events: none; }
+.location-panel { position: absolute; left: 80px; right: 80px; top: 180px; opacity: 0; transform: translateY(16px); transition: opacity .35s var(--ease), transform .45s var(--ease); pointer-events: none; }
+#settings.location-open .location-panel { opacity: 1; transform: none; pointer-events: auto; }
+.location-input {
+  width: 100%; margin-top: 8px; padding: 18px 24px; border-radius: 14px; border: 2px solid var(--rule);
+  background: rgba(239, 231, 214, .06); color: var(--paper); font: 500 32px var(--sans); outline: none;
+}
+.location-input:focus { border-color: var(--marker); }
+.location-input::placeholder { color: var(--paper-faint); }
+.location-results { margin-top: 18px; display: flex; flex-direction: column; gap: 4px; min-height: 60px; }
+.location-result { padding: 14px 20px; border-radius: 12px; transition: background .2s var(--ease), box-shadow .2s var(--ease); }
+.location-result b { display: block; font-size: 26px; font-weight: 500; }
+.location-result span { font-size: 18px; color: var(--paper-dim); }
+.location-result.on { background: rgba(239, 231, 214, .08); box-shadow: inset 0 0 0 3px var(--marker); }
 
 /* ambient */
 #ambient { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 1.4s var(--ease-io); }
