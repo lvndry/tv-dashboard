@@ -14,10 +14,10 @@ const readPassword = name => existsSync(join(certs, name)) ? readFileSync(join(c
 execFileSync(tizenjs, [
   'build', '.',
   '-t', 'wgt',
-  '-o', join(dist, 'bonsoir.wgt'),
+  '-o', join(dist, 'tv-dashboard.wgt'),
   '--author', join(certs, 'author.p12'),
   '--authorPwd', readPassword('author.pw'),
   '--distributor', join(certs, 'distributor.p12'),
   '--distributorPwd', readPassword('author.pw'),
 ], { cwd: dist, stdio: 'inherit' });
-console.log('✓ signed →', join(dist, 'bonsoir.wgt'));
+console.log('✓ signed →', join(dist, 'tv-dashboard.wgt'));

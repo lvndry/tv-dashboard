@@ -19,13 +19,13 @@ const host = process.env.TV_HOST ?? '192.168.1.119';
 const port = process.env.TV_PORT ?? '8091';
 const pin = process.env.TV_PIN ?? '000000';
 
-const wgtPath = join(root, 'app', 'dist', 'bonsoir.wgt');
+const wgtPath = join(root, 'app', 'dist', 'tv-dashboard.wgt');
 if (!existsSync(wgtPath)) { console.error(`no package at ${wgtPath} — run "bun run pkg" first`); process.exit(1); }
 const wgt = readFileSync(wgtPath);
 console.log(`→ ${host}:${port}`);
 const res = await fetch(`http://${host}:${port}/install`, {
   method: 'POST',
-  headers: { 'x-homebrew-pin': pin, 'x-homebrew-name': 'bonsoir.wgt', 'Content-Type': 'application/octet-stream' },
+  headers: { 'x-homebrew-pin': pin, 'x-homebrew-name': 'tv-dashboard.wgt', 'Content-Type': 'application/octet-stream' },
   body: wgt,
 });
 console.log('HTTP', res.status);

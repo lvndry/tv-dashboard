@@ -143,7 +143,7 @@ const shortcutDetail = {
 function rackNote(entry: RackEntry): string {
   if (entry.kind === 'shortcut') {
     return `
-      <div class="kicker">Bonsoir</div>
+      <div class="kicker">Dashboard</div>
       <div class="wordmark">${escapeHtml(entry.name)}<i style="background:${entry.dot}"></i></div>
       <div class="nmeta">${escapeHtml(shortcutDetail[entry.target])}</div>
       ${okLine(`Open ${entry.name.toLowerCase()}`)}`;

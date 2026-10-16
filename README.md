@@ -1,11 +1,13 @@
-# Bonsoir
+# TV Dashboard
 
 A home screen for a Samsung Tizen TV. It opens with a short letter (the weather and the day's news, written as sentences whose phrases you can select), a margin that details whatever is focused, and a rack of apps along the bottom.
+
+The look is the Bonsoir theme: ink-blue night, paper-coloured serif text, and a highlighter stroke that marks what the remote is pointing at, built to read from the sofa in a dim room.
 
 ## Getting started
 
 ```sh
-git clone https://github.com/lvndry/bonsoir.git && cd bonsoir
+git clone https://github.com/lvndry/tv-dashboard.git && cd tv-dashboard
 bun install        # also creates app/config.ts from app/config.example.ts
 ```
 
@@ -16,7 +18,7 @@ Edit `app/config.ts` for your city, feeds and apps (see Configuration below), th
 ```sh
 bun run dev        # preview at http://localhost:5173 with live rebuilds
 bun run typecheck
-bun run pkg        # build and sign app/dist/bonsoir.wgt
+bun run pkg        # build and sign app/dist/tv-dashboard.wgt
 bun run deploy     # pkg, then install on the TV through the homebrew service
 ```
 

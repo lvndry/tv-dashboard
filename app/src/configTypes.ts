@@ -27,7 +27,7 @@ export interface InputEntry {
   dot: string;
 }
 
-/** A screen inside Bonsoir itself. */
+/** A screen inside the dashboard itself. */
 export interface ShortcutEntry {
   kind: 'shortcut';
   id: string;

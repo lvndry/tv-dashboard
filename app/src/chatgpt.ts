@@ -10,7 +10,7 @@ const authBase = 'https://auth.openai.com';
 const backendBase = 'https://chatgpt.com/backend-api/codex';
 const deviceRedirect = `${authBase}/deviceauth/callback`;
 export const deviceVerificationUrl = `${authBase}/codex/device`;
-const originator = 'bonsoir';
+const originator = 'tv-dashboard';
 const refreshMarginMs = 5 * 60000;
 const secretName = 'chatgpt';
 

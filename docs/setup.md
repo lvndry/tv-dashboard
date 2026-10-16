@@ -78,7 +78,7 @@ bun run deploy                 # build → sign (if TIZENJS set) → push to TV
   with the certificate you minted in step 3
 
 After a deploy the dashboard updates in place. Launch it from the TV's app
-panel (it shows up as *Bonsoir*), or over the Control API:
+panel (it shows up as *TV Dashboard*), or over the Control API:
 
 ```sh
 curl -X POST http://TV_HOST:8001/api/v2/applications/BonsoirTV1.Bonsoir

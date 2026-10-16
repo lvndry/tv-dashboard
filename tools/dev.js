@@ -19,7 +19,7 @@ createServer(async (request, response) => {
     const target = url.searchParams.get('url') ?? '';
     if (!/^https:\/\//.test(target)) { response.writeHead(400).end('bad url'); return; }
     const forwarded = ['authorization', 'chatgpt-account-id', 'originator', 'openai-beta', 'accept', 'content-type'];
-    const headers = { 'user-agent': 'Mozilla/5.0 (SMART-TV; Tizen 9.0) Bonsoir' };
+    const headers = { 'user-agent': 'Mozilla/5.0 (SMART-TV; Tizen 9.0) TV Dashboard' };
     for (const name of forwarded) if (request.headers[name]) headers[name] = request.headers[name];
     const chunks = [];
     for await (const chunk of request) chunks.push(chunk);
@@ -41,4 +41,4 @@ createServer(async (request, response) => {
   } catch {
     response.writeHead(404).end('not found');
   }
-}).listen(port, '127.0.0.1', () => console.log(`Bonsoir preview → http://localhost:${port}`));
+}).listen(port, '127.0.0.1', () => console.log(`TV Dashboard preview → http://localhost:${port}`));

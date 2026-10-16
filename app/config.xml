@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <widget xmlns="http://www.w3.org/ns/widgets"
         xmlns:tizen="http://tizen.org/ns/widgets"
-        id="https://github.com/lvndry/bonsoir"
+        id="https://github.com/lvndry/tv-dashboard"
         version="1.1.0"
         viewmodes="maximized">
   <content src="index.html"/>
@@ -16,6 +16,6 @@
   <tizen:privilege name="http://tizen.org/privilege/tv.window"/>
   <!--CSP-->
   <icon src="icon.png"/>
-  <name>Bonsoir</name>
+  <name>TV Dashboard</name>
   <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" encryption="disable" install-location="auto" hwkey-event="enable" recent-allow="true"/>
 </widget>

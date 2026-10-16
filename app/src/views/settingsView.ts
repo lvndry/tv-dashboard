@@ -154,7 +154,7 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
           <span>${escapeHtml(status.detail)}${status.updatedAt ? ` · ${relativeAge(status.updatedAt)}` : ''}</span>
         </div>`).join('') : '<div class="nmeta">Nothing fetched yet.</div>'}
       <div class="keys"><span><i style="background:#E5484D"></i>Refresh</span><span><i style="background:#30A46C"></i>Ambient</span><span><i style="background:#F5D90A"></i>News</span><span><i style="background:#3E63DD"></i>Settings</span></div>
-      <div class="build">Bonsoir · built ${escapeHtml(__BUILD_TIME__)}</div>`;
+      <div class="build">TV Dashboard · built ${escapeHtml(__BUILD_TIME__)}</div>`;
   }
 
   function render(): void {
