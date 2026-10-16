@@ -69,6 +69,8 @@ The collection is about 2,800 works, gathered without any API key:
 - **The Met's** curated highlights across its ancient, African, Asian, Islamic, medieval and European departments.
 - **The Cleveland Museum of Art's** open-access highlights.
 
+To browse the collection, open **Gallery** from the rack: a chronological grid with tabs for each era and your favourites. OK shows a work full-screen, ◀ ▶ step through, and OK again favourites it; favourites come up more often in ambient mode.
+
 Add or remove museums in `art.museums` (any museum with a Wikidata id works), move `art.from` and `art.until` to change the period (3500 BCE to 1850 by default), or switch to the plain clock in Settings → Ambient style. The list is fetched once a week and cached on the TV.
 
 ## AI news brief (ChatGPT)
