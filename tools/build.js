@@ -9,9 +9,12 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const app = join(root, 'app');
 export const dist = join(app, 'dist');
 
-const fixedOrigins = ['https://api.open-meteo.com', 'https://auth.openai.com', 'https://chatgpt.com'];
+const fixedOrigins = [
+  'https://api.open-meteo.com', 'https://auth.openai.com', 'https://chatgpt.com',
+  'https://query.wikidata.org', 'https://collectionapi.metmuseum.org', 'https://openaccess-api.clevelandart.org',
+];
 
-/** connect-src is limited to the weather API, OpenAI, and the feeds named in config.ts. */
+/** connect-src is limited to the weather API, OpenAI, the art collections, and the feeds named in config.ts. */
 export function contentSecurityPolicy() {
   const configSource = readFileSync(join(app, 'config.ts'), 'utf8');
   const feedOrigins = [...configSource.matchAll(/url:\s*'(https:\/\/[^']+)'/g)].map(match => new URL(match[1]).origin);

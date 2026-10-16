@@ -119,6 +119,21 @@ export function brief() {
   };
 }
 
+/** One public-domain painting, so the ambient screenshot is the same on every run. */
+export function artQueryResult() {
+  return {
+    results: {
+      bindings: [{
+        item: { value: 'http://www.wikidata.org/entity/Q212616' },
+        itemLabel: { value: 'The Raft of the Medusa' },
+        creatorLabel: { value: 'Théodore Géricault' },
+        image: { value: 'http://commons.wikimedia.org/wiki/Special:FilePath/JEAN%20LOUIS%20TH%C3%89ODORE%20G%C3%89RICAULT%20-%20La%20Balsa%20de%20la%20Medusa%20%28Museo%20del%20Louvre%2C%201818-19%29.jpg' },
+        inception: { value: '1819-01-01T00:00:00Z' },
+      }],
+    },
+  };
+}
+
 function base64url(value) {
   return Buffer.from(JSON.stringify(value)).toString('base64url');
 }

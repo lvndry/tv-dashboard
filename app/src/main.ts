@@ -1,6 +1,7 @@
 import { config } from '../config';
 import type { RackEntry } from './configTypes';
-import { isAmbient, startAmbient, stopAmbient } from './ambient';
+import { isAmbient, prepareAmbient, startAmbient, stopAmbient } from './ambient';
+import { refreshArt } from './art';
 import { data, onDataChange, refreshAll, refreshConnection, refreshStale } from './data';
 import { byId, toast, watchImages } from './dom';
 import { initApps, onInputRequested, onShortcutRequested } from './launcher';
@@ -217,6 +218,7 @@ home.render();
 showView('home');
 void initApps().then(() => home.render());
 void refreshConnection().then(refreshStale);
+void refreshArt().then(prepareAmbient);
 setInterval(refreshStale, 60000);
 setInterval(renderDateline, 60000);
 resetIdle();

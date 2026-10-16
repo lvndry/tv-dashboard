@@ -13,4 +13,11 @@ export const config = defineConfig({
     { id: 'culture', name: 'Salon', section: 'Culture', url: 'https://feeds.example.com/culture' },
     { id: 'sport', name: 'Touchline', section: 'Sport', url: 'https://feeds.example.com/sport' },
   ],
+  art: {
+    ...example.art,
+    museums: [{ name: 'Louvre', city: 'Paris', wikidata: 'Q19675', minSitelinks: 0 }],
+    egyptianTombs: false,
+    metDepartments: null,
+    cleveland: false,
+  },
 });

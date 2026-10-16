@@ -10,10 +10,10 @@ The look is the Bonsoir theme: ink-blue night, paper-coloured serif text, and a 
 | --- | --- |
 | ![A news story focused in the letter, with its summary in the margin](docs/screenshots/home-story.png) | ![The News view on the Brief tab, with a story list and a detail pane](docs/screenshots/news.png) |
 | **Focus a phrase** and the margin explains it: a story's summary, an hourly forecast, the week ahead. | **News** groups the day's headlines by section, with an AI-written brief when ChatGPT is connected. |
-| ![Pairing ChatGPT with a code shown on the TV](docs/screenshots/pairing.png) | ![Ambient mode: a large clock with one line about the weather](docs/screenshots/ambient.png) |
-| **Connect ChatGPT** by entering a code on your phone. The sign-in goes straight to the TV and is stored there encrypted. | **Ambient mode** takes over when the remote has been idle, built from the live weather and headlines. |
+| ![Pairing ChatGPT with a code shown on the TV](docs/screenshots/pairing.png) | ![Ambient mode: The Raft of the Medusa fills the screen, with the clock and a caption on the left](docs/screenshots/ambient.png) |
+| **Connect ChatGPT** by entering a code on your phone. The sign-in goes straight to the TV and is stored there encrypted. | **Ambient mode** turns the TV into a gallery when the remote is idle: public-domain art from ancient Egypt to Romanticism. |
 
-<sub>Screenshots use fictional news and weather. Regenerate them with `bun run screenshots`.</sub>
+<sub>Screenshots use fictional news and weather; the painting is Géricault's *The Raft of the Medusa* (Louvre, public domain). Regenerate them with `bun run screenshots`.</sub>
 
 ## Getting started
 
@@ -53,9 +53,23 @@ News and Settings sit at the end of the rack along the bottom, so every remote c
 - `name`, `place`, `latitude`, `longitude`, `timeZone`: the greeting, the weather location and the clock.
 - `rack`: what sits along the bottom, left to right. Apps (`kind: 'app'`) are matched by their installed name on the TV, so you don't need package IDs. Add an HDMI device with `kind: 'input'`. `kind: 'shortcut'` opens News or Settings.
 - `news`: any RSS or Atom feeds, each with a section. Their hosts are added to the app's network allowlist at build time.
+- `art`: where ambient mode finds its art (see below).
 - `brief`: the ChatGPT model, language and refresh interval for the news brief.
 
 Ambient delay, highlighter colour, clock format, console HDMI port and the ChatGPT connection are set on the TV itself, in Settings.
+
+## Art in ambient mode
+
+When the remote has been idle, the TV becomes a gallery: one public-domain work at a time, from ancient Egypt to Romanticism (up to 1850), changing every few minutes. Paintings fill the screen with a slow pan; statues and objects are shown whole, lit against a blurred copy of themselves. The caption gives the title, artist or culture, date and museum.
+
+The collection is about 2,800 works, gathered without any API key:
+
+- **Wikidata** for museums without open APIs: the Louvre, British Museum, musée du quai Branly, the Egyptian Museum in Cairo, Grand Egyptian Museum, Museo Egizio, Neues Museum, Acropolis Museum, Vatican Museums, Uffizi, Prado, National Gallery, Rijksmuseum, Kunsthistorisches Museum, Hermitage and musée Guimet. Images come from Wikimedia Commons.
+- **Egyptian tombs and pyramids** from Wikidata, including the inside of Tutankhamun's tomb and the painted tombs of the Valley of the Kings.
+- **The Met's** curated highlights across its ancient, African, Asian, Islamic, medieval and European departments.
+- **The Cleveland Museum of Art's** open-access highlights.
+
+Add or remove museums in `art.museums` (any museum with a Wikidata id works), move `art.until` to change the period, or switch to the plain clock in Settings → Ambient style. The list is fetched once a week and cached on the TV.
 
 ## AI news brief (ChatGPT)
 
@@ -82,7 +96,7 @@ The PS5 entry shows an HDMI input full-screen through the TV window API (`tizen.
 
 ## Credits
 
-Type is [Newsreader](https://fonts.google.com/specimen/Newsreader) and [Inter](https://rsms.me/inter/), both under the SIL Open Font License. Weather from [Open-Meteo](https://open-meteo.com).
+Type is [Newsreader](https://fonts.google.com/specimen/Newsreader) and [Inter](https://rsms.me/inter/), both under the SIL Open Font License. Weather from [Open-Meteo](https://open-meteo.com). Art from [Wikidata](https://www.wikidata.org) and [Wikimedia Commons](https://commons.wikimedia.org), [The Metropolitan Museum of Art Open Access](https://www.metmuseum.org/about-the-met/policies-and-documents/open-access) and the [Cleveland Museum of Art Open Access](https://www.clevelandart.org/open-access).
 
 ## License
 

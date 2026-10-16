@@ -8,8 +8,12 @@ export const accents = [
 
 export const idleChoices = [0, 1, 2, 3, 5, 10, 15, 30];
 
+export const artIntervals = [2, 5, 10, 20];
+
 export interface Settings {
   idleMinutes: number;
+  ambientStyle: 'art' | 'clock';
+  artMinutes: number;
   accent: string;
   clock24: boolean;
   briefEnabled: boolean;
@@ -18,6 +22,8 @@ export interface Settings {
 
 const defaults: Settings = {
   idleMinutes: 3,
+  ambientStyle: 'art',
+  artMinutes: 5,
   accent: '#F2DE6B',
   clock24: true,
   briefEnabled: true,

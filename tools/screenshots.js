@@ -1,6 +1,7 @@
 // Renders README screenshots at 1920×1080 with fictional data, using headless Chrome.
 // The app runs unmodified: the clock is shifted to the evening, and the local server
-// answers the weather, feed and ChatGPT requests with fixtures. That also exercises
+// answers the weather, feed, art and ChatGPT requests with fixtures. The one artwork's
+// image is a public-domain painting fetched from Wikimedia Commons. That also exercises
 // the real pairing and brief code paths end to end.
 import { spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -53,6 +54,7 @@ const server = createServer(async (request, response) => {
   for await (const chunk of request) chunks.push(chunk);
   const body = Buffer.concat(chunks).toString();
   if (target.hostname === 'api.open-meteo.com') return respond(response, 200, fixtures.weather(fakeNow()));
+  if (target.hostname === 'query.wikidata.org') return respond(response, 200, fixtures.artQueryResult());
   if (target.hostname === 'feeds.example.com') return respond(response, 200, fixtures.rss(target.pathname.slice(1), fakeNow()), 'application/rss+xml');
   if (target.pathname === '/api/accounts/deviceauth/usercode') {
     return respond(response, 200, { device_auth_id: 'demo', user_code: 'TVDB-4271', interval: '3', expires_at: new Date(fakeNow() + 15 * 60000).toISOString() });
@@ -164,7 +166,7 @@ try {
 
   await press('back');
   await press('ambient');
-  await shot('ambient', 2600);
+  await shot('ambient', 5000);
 
   const request = seen.briefRequest;
   console.log(`brief request: model=${request?.body.model} store=${request?.body.store} stream=${request?.body.stream} format=${request?.body.text?.format?.type} account-header=${request?.headers['chatgpt-account-id'] ? 'yes' : 'no'}`);

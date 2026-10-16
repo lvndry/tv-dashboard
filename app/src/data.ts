@@ -52,6 +52,11 @@ function setStatus(key: string, status: SourceStatus): void {
   data.status.set(key, status);
 }
 
+export function reportStatus(key: string, status: SourceStatus): void {
+  setStatus(key, status);
+  notify();
+}
+
 const message = (error: unknown): string => error instanceof Error ? error.message : String(error);
 
 let weatherInFlight = false;
