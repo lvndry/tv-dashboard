@@ -35,7 +35,7 @@ export interface Settings {
 const defaults: Settings = {
   idleMinutes: 3,
   ambientStyle: 'art',
-  artSeconds: 30,
+  artSeconds: 60,
   accent: '#F2DE6B',
   clock24: true,
   briefEnabled: true,
@@ -63,7 +63,11 @@ function writeJson(key: string, value: unknown): void {
   }
 }
 
-export const settings: Settings = { ...defaults, ...readJson<Partial<Settings>>(settingsKey) };
+const stored = readJson<Partial<Settings> & { revision?: number }>(settingsKey) ?? {};
+// Revision 2 moved the default artwork interval from 30 s to 60 s; carry saved defaults along once.
+if ((stored.revision ?? 1) < 2 && stored.artSeconds === 30) stored.artSeconds = 60;
+
+export const settings: Settings & { revision: number } = { ...defaults, ...stored, revision: 2 };
 
 export function updateSettings(patch: Partial<Settings>): void {
   Object.assign(settings, patch);

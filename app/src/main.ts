@@ -100,7 +100,7 @@ function renderDateline(): void {
     freshness.textContent = lastUpdate ? `Offline · showing ${timeLabel(lastUpdate)}` : 'Offline';
     freshness.className = 'freshness bad';
   } else if (failures.length) {
-    freshness.textContent = `${failures.length} source${failures.length === 1 ? '' : 's'} unreachable · Blue for details`;
+    freshness.textContent = `${failures.length} source${failures.length === 1 ? '' : 's'} unreachable · details in Settings`;
     freshness.className = 'freshness bad';
   } else {
     freshness.textContent = lastUpdate ? `Updated ${relativeAge(lastUpdate)}` : 'Fetching…';

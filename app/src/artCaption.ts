@@ -13,6 +13,7 @@ const sourceLine: Record<ArtDetails['storySource'], string> = {
   chatgpt: 'Told by ChatGPT from Wikipedia and the museum’s records',
   wikipedia: 'From Wikipedia',
   museum: 'From the museum’s description',
+  record: 'From the museum’s records',
   '': '',
 };
 
