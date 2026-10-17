@@ -412,6 +412,9 @@ body.ambient-art .acaption.out { opacity: 0; }
 .asource { margin-top: 16px; font-size: 15px; color: var(--paper-faint); letter-spacing: .04em; }
 .viewer .acaption { top: 140px; bottom: 80px; max-width: 620px; display: flex; flex-direction: column; justify-content: flex-end; }
 .viewer .astory { display: block; -webkit-line-clamp: unset; overflow: visible; font-size: 22px; }
+.aqrcode { display: flex; align-items: center; gap: 22px; margin-top: 28px; padding: 18px 22px; border: 1px solid rgba(242,240,230,.16); background: rgba(14,18,32,.45); border-radius: 14px; width: fit-content; }
+.aqrcode .qrcode { width: 108px; height: 108px; display: block; flex: none; }
+.aqrcode-label { font-size: 18px; color: var(--paper-soft); line-height: 1.4; max-width: 260px; }
 
 /* HDMI passthrough: the TV window sits behind a transparent page */
 body.hdmi, body.hdmi #stage, html:has(body.hdmi) { background: transparent !important; }

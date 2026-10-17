@@ -54,7 +54,12 @@ const server = createServer(async (request, response) => {
   for await (const chunk of request) chunks.push(chunk);
   const body = Buffer.concat(chunks).toString();
   if (target.hostname === 'api.open-meteo.com') return respond(response, 200, fixtures.weather(fakeNow()));
-  if (target.hostname === 'query.wikidata.org') return respond(response, 200, fixtures.artQueryResult());
+    if (target.hostname === 'query.wikidata.org') return respond(response, 200, fixtures.artQueryResult());
+  if (target.hostname === 'en.wikipedia.org' || target.hostname === 'fr.wikipedia.org') return respond(response, 200, fixtures.wikipediaExtract());
+  if (target.hostname === 'api.perplexity.ai') {
+    seen.briefRequest = { headers: request.headers, body: JSON.parse(body) };
+    return respond(response, 200, { status: 'completed', output: [{ type: 'message', content: [{ text: JSON.stringify(fixtures.brief()) }] }] });
+  }
   if (target.hostname === 'feeds.example.com') return respond(response, 200, fixtures.rss(target.pathname.slice(1), fakeNow()), 'application/rss+xml');
   if (target.pathname === '/api/accounts/deviceauth/usercode') {
     return respond(response, 200, { device_auth_id: 'demo', user_code: 'TVDB-4271', interval: '3', expires_at: new Date(fakeNow() + 15 * 60000).toISOString() });
@@ -168,8 +173,17 @@ try {
   await press('ambient');
   await shot('ambient', 5000);
 
-  const request = seen.briefRequest;
-  console.log(`brief request: model=${request?.body.model} store=${request?.body.store} stream=${request?.body.stream} format=${request?.body.text?.format?.type} account-header=${request?.headers['chatgpt-account-id'] ? 'yes' : 'no'}`);
+  // Gallery viewer: back to home, focus the Gallery chip on the rack (click = pointer focus),
+  // OK opens the gallery, focus the first tile, OK opens the viewer — capture the QR code and the uncropped story.
+  await press('back');
+  await evaluate(`(() => { const chip = [...document.querySelectorAll('#shelf .chip')].find(node => /gallery/i.test(node.textContent || '')); if (!chip) return 'no chip'; chip.dispatchEvent(new MouseEvent('click', { bubbles: true })); return 'focused'; })()`);
+  await press('ok');
+  await pause(3000);
+  await evaluate(`(() => { const work = document.querySelector('#gallery [data-focus]'); if (!work) return 'no work'; work.dispatchEvent(new MouseEvent('click', { bubbles: true })); return 'focused'; })()`);
+  await press('ok');
+  await shot('gallery-viewer', 3500);
+
+
 } finally {
   socket.close();
   browser.kill();

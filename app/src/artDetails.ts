@@ -12,6 +12,8 @@ export interface ArtDetails {
   story: string;
   storySource: 'chatgpt' | 'wikipedia' | 'museum' | 'record' | '';
   facts: { label: string; value: string }[];
+  /** The catalogue or article page behind the story; the viewer's QR code points here. */
+  url?: string;
 }
 
 interface SourceMaterial {
@@ -20,11 +22,12 @@ interface SourceMaterial {
   text: string;
   textSource: 'wikipedia' | 'museum' | '';
   facts: { label: string; value: string }[];
+  url?: string;
 }
 
 // Two caches: the source material (Wikipedia or museum text and facts), which is cheap to
 // refetch, and ChatGPT's stories, which are generated once per artwork and kept.
-const materialCacheName = 'art-material.v2';
+const materialCacheName = 'art-material.v3';  // v3: entries gained the source url for the QR code
 const materialLimit = 400;
 const storyCacheName = 'art-stories';
 const storyLimit = 1500;
@@ -57,13 +60,16 @@ export function cachedDetails(work: Artwork): ArtDetails | null {
 const stripHtml = (html: string): string =>
   (new DOMParser().parseFromString(html, 'text/html').body.textContent ?? '').replace(/\s+/g, ' ').trim();
 
-/** Wikipedia intro plus the first sections, enough history for a short story. */
-async function wikipediaText(site: string, title: string): Promise<string> {
+/** Wikipedia's opening section for the story, plus the article page the QR code points to. */
+async function wikipediaPage(site: string, title: string): Promise<{ text: string; url: string }> {
   const language = site.replace('wiki', '');
-  const url = `https://${language}.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=extracts&explaintext=1&exsectionformat=plain&exchars=3000&redirects=1&titles=${encodeURIComponent(title)}`;
-  const result = await fetchJson<{ query: { pages: Record<string, { extract?: string }> } }>(url);
+  const api = `https://${language}.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=extracts|info&explaintext=1&exsectionformat=plain&exchars=3000&inprop=url&redirects=1&titles=${encodeURIComponent(title)}`;
+  const result = await fetchJson<{ query: { pages: Record<string, { extract?: string; fullurl?: string }> } }>(api);
   const page = Object.values(result.query.pages)[0];
-  return (page?.extract ?? '').replace(/\n{2,}/g, '\n').trim();
+  return {
+    text: (page?.extract ?? '').replace(/\n{2,}/g, '\n').trim(),
+    url: page?.fullurl ?? `https://${language}.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`,
+  };
 }
 
 interface WikidataEntity {
@@ -110,8 +116,8 @@ async function wikidataMaterial(qid: string): Promise<SourceMaterial> {
   if (named(movements)) facts.push({ label: 'Movement', value: named(movements) });
   if (named(depicts)) facts.push({ label: 'Depicts', value: named(depicts) });
   const site = entity.sitelinks?.enwiki ? 'enwiki' : entity.sitelinks?.frwiki ? 'frwiki' : null;
-  const text = site ? await wikipediaText(site, entity.sitelinks![site]!.title).catch(() => '') : '';
-  return { text, textSource: text ? 'wikipedia' : '', facts, summary: entity.descriptions?.en?.value };
+  const wiki = site ? await wikipediaPage(site, entity.sitelinks![site]!.title).catch(() => ({ text: '', url: '' })) : { text: '', url: '' };
+  return { text: wiki.text, textSource: wiki.text ? 'wikipedia' : '', facts, summary: entity.descriptions?.en?.value, url: wiki.url };
 }
 
 interface MetObjectDetails { medium: string; dimensions: string; culture: string; period: string; dynasty: string; creditLine: string; objectWikidata_URL: string }
@@ -127,7 +133,7 @@ async function metMaterial(id: string): Promise<SourceMaterial> {
   ].filter(fact => fact.value);
   const qid = object.objectWikidata_URL?.split('/').pop();
   const fromWikidata = qid && /^Q\d+$/.test(qid) ? await wikidataMaterial(qid).catch(() => null) : null;
-  return { text: fromWikidata?.text ?? '', textSource: fromWikidata?.textSource ?? '', facts, summary: fromWikidata?.summary };
+  return { text: fromWikidata?.text ?? '', textSource: fromWikidata?.textSource ?? '', facts, summary: fromWikidata?.summary, url: `https://www.metmuseum.org/art/collection/search/${id}` };
 }
 
 interface ClevelandDetails { wall_description: string | null; description: string | null; did_you_know: string | null; technique: string; measurements: string; culture: string[]; department: string }
@@ -141,7 +147,7 @@ async function clevelandMaterial(id: string): Promise<SourceMaterial> {
     { label: 'Size', value: (work.measurements ?? '').split(';')[0] ?? '' },
     { label: 'Culture', value: work.culture?.[0] ?? '' },
   ].filter(fact => fact.value);
-  return { text, textSource: text ? 'museum' : '', facts };
+  return { text, textSource: text ? 'museum' : '', facts, url: `https://collections.clevelandart.org/artwork/collection/${id}` };
 }
 
 interface LouvreDetails { description?: string; historicalContext?: string; objectHistory?: string; materialsAndTechniques?: string; dimension?: { displayDimension?: string; type?: string }[]; room?: string }
@@ -155,7 +161,7 @@ async function louvreMaterial(id: string): Promise<SourceMaterial> {
     { label: 'Size', value: (record.dimension ?? []).slice(0, 2).map(item => `${item.type ?? ''} ${item.displayDimension ?? ''}`.trim()).join(', ') },
     { label: 'Room', value: record.room ?? '' },
   ].filter(fact => fact.value);
-  return { text, textSource: text ? 'museum' : '', facts };
+  return { text, textSource: text ? 'museum' : '', facts, url: `https://collections.louvre.fr/ark:/53355/${id}` };
 }
 
 interface EuropeanaProxy { europeanaProxy?: boolean; dcDescription?: Record<string, string[]>; dctermsMedium?: Record<string, string[]>; dctermsExtent?: Record<string, string[]>; dcDate?: Record<string, string[]> }
@@ -170,7 +176,7 @@ async function europeanaMaterial(id: string): Promise<SourceMaterial> {
     { label: 'Size', value: first(proxy?.dctermsExtent)[0] ?? '' },
     { label: 'Date', value: first(proxy?.dcDate)[0] ?? '' },
   ].filter(fact => fact.value);
-  return { text, textSource: text ? 'museum' : '', facts };
+  return { text, textSource: text ? 'museum' : '', facts, url: `https://www.europeana.eu/record${id}` };
 }
 
 async function sourceMaterial(work: Artwork): Promise<SourceMaterial> {
@@ -195,13 +201,10 @@ function recordLine(work: Artwork, material: SourceMaterial): string {
   return head ? `${head}.` : '';
 }
 
-/** First paragraph of the source text, cut at a sentence end near the limit. */
-function excerpt(text: string, limit = 1100): string {
+/** The complete first paragraph of the source text, shown without being cut. */
+function excerpt(text: string): string {
   const paragraph = text.split('\n').find(line => line.trim().length > 60) ?? text;
-  if (paragraph.length <= limit) return paragraph.trim();
-  const cut = paragraph.slice(0, limit);
-  const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('. '));
-  return (end > limit * 0.5 ? cut.slice(0, end + 1) : `${cut.trim()}…`).trim();
+  return paragraph.trim();
 }
 
 const storySchema = { type: 'object', additionalProperties: false, required: ['story'], properties: { story: { type: 'string' } } };
@@ -246,8 +249,8 @@ export function artDetails(work: Artwork, onUpdate?: (details: ArtDetails) => vo
       const fetched = await sourceMaterial(work).catch((): SourceMaterial => ({ text: '', textSource: '', facts: [] }));
       sourceText = fetched.text;
       material = fetched.text
-        ? { story: excerpt(fetched.text), storySource: fetched.textSource, facts: fetched.facts }
-        : { story: recordLine(work, fetched), storySource: 'record', facts: fetched.facts };
+        ? { story: excerpt(fetched.text), storySource: fetched.textSource, facts: fetched.facts, url: fetched.url }
+        : { story: recordLine(work, fetched), storySource: 'record', facts: fetched.facts, url: fetched.url };
       if (fetched.text || fetched.facts.length) rememberIn(materialCache, materialCacheName, materialLimit, work.id, material);
     }
     onUpdate?.(material);
