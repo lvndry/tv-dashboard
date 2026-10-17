@@ -212,7 +212,8 @@ export function createGalleryView(close: () => void): View {
         }
       } else if (action === 'down') {
         updateSettings({ slideshow: !settings.slideshow });
-        toast(settings.slideshow ? `Slideshow on: a new work every ${settings.artSeconds < 60 ? `${settings.artSeconds} s` : `${settings.artSeconds / 60} min`}` : 'Slideshow off');
+        const interval = settings.artSeconds < 60 ? `${settings.artSeconds} s` : settings.artSeconds < 3600 ? `${settings.artSeconds / 60} min` : settings.artSeconds < 86400 ? `${settings.artSeconds / 3600} h` : '24 h';
+        toast(settings.slideshow ? `Slideshow on: a new work every ${interval}` : 'Slideshow off');
         scheduleNext();
       } else if (action === 'back' || action === 'up') closeViewer();
       return true;

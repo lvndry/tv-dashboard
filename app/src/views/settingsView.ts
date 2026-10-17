@@ -195,9 +195,9 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
     },
     {
       label: 'New artwork every',
-      value: () => settings.artSeconds < 60 ? `${settings.artSeconds} s` : `${settings.artSeconds / 60} min`,
+      value: () => settings.artSeconds < 60 ? `${settings.artSeconds} s` : settings.artSeconds < 3600 ? `${settings.artSeconds / 60} min` : settings.artSeconds < 86400 ? `${settings.artSeconds / 3600} h` : '24 h',
       change: step => updateSettings({ artSeconds: cycle(artIntervals, settings.artSeconds, step) }),
-      note: () => 'In ambient mode and the gallery slideshow.',
+      note: () => 'In ambient mode and the gallery slideshow. 24 h keeps a single work up a whole day.',
     },
     {
       label: 'Gallery slideshow',
