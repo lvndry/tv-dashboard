@@ -4,12 +4,6 @@ import { isFavourite } from './art';
 import type { ArtDetails } from './artDetails';
 import { escapeHtml } from './dom';
 
-/** Wide works fill the whole screen edge to edge; only portrait and near-square pieces stay framed whole. */
-export function fillsScreen(width: number, height: number): boolean {
-  const ratio = width / Math.max(1, height);
-  return ratio > 1.3;
-}
-
 const sourceLine: Record<ArtDetails['storySource'], string> = {
   chatgpt: 'Told by ChatGPT from Wikipedia and the museum’s records',
   wikipedia: 'From Wikipedia',

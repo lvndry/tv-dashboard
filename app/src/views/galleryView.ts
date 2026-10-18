@@ -1,5 +1,5 @@
 import { artReady, regions, favouriteWorks, galleryWorks, isFavourite, loadArtwork, toggleFavourite, type Artwork, type Region } from '../art';
-import { captionHtml, fillsScreen } from '../artCaption';
+import { captionHtml } from '../artCaption';
 import { artDetails, cachedDetails } from '../artDetails';
 import { byId, escapeHtml, toast } from '../dom';
 import type { Action } from '../platform';
@@ -152,7 +152,7 @@ export function createGalleryView(close: () => void): View {
     const incoming = frames[1 - viewerFront]!;
     const outgoing = frames[viewerFront]!;
     const url = escapeHtml(loaded.image);
-    incoming.className = `art-frame ${fillsScreen(loaded.width, loaded.height) ? 'fill' : 'framed'}`;
+    incoming.className = 'art-frame framed';
     incoming.style.setProperty('--art-duration', `${settings.artSeconds + 10}s`);
     incoming.style.setProperty('--pan-x', '0%');
     incoming.style.setProperty('--pan-y', '0%');

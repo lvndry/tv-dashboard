@@ -1,6 +1,6 @@
 import { config } from '../config';
 import { nextArtwork, type LoadedArtwork } from './art';
-import { captionHtml, fillsScreen } from './artCaption';
+import { captionHtml } from './artCaption';
 import { artDetails, cachedDetails } from './artDetails';
 import { data } from './data';
 import { shortPlace } from './location';
@@ -42,7 +42,7 @@ function showArtwork(work: LoadedArtwork): void {
   const url = escapeHtml(work.image);
   const panX = Math.round(Math.random() * 6 - 3);
   const panY = Math.round(Math.random() * 4 - 2);
-  incoming.className = `art-frame ${fillsScreen(work.width, work.height) ? 'fill' : 'framed'}`;
+  incoming.className = 'art-frame framed';
   incoming.style.setProperty('--pan-x', `${panX}%`);
   incoming.style.setProperty('--pan-y', `${panY}%`);
   incoming.style.setProperty('--art-duration', `${settings.artSeconds + 10}s`);
