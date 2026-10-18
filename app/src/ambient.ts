@@ -30,7 +30,6 @@ function ambientLines(): string[] {
 
 let lineIndex = 0;
 let lineTimer: ReturnType<typeof setInterval> | undefined;
-let driftTimer: ReturnType<typeof setInterval> | undefined;
 let artTimer: ReturnType<typeof setTimeout> | undefined;
 let artSession = 0;
 let frontFrame = 0;
@@ -101,7 +100,6 @@ export function prepareAmbient(): void {
 
 export function startAmbient(): void {
   const line = byId('aline');
-  const drift = byId('drift');
   const lines = ambientLines();
   lineIndex = lineIndex % lines.length;
   line.textContent = lines[lineIndex] ?? '';
@@ -109,7 +107,6 @@ export function startAmbient(): void {
   document.body.classList.add('ambient');
   document.body.classList.toggle('ambient-art', settings.ambientStyle === 'art');
   clearInterval(lineTimer);
-  clearInterval(driftTimer);
   lineTimer = setInterval(() => {
     line.classList.add('out');
     setTimeout(() => {
@@ -119,18 +116,12 @@ export function startAmbient(): void {
       line.classList.remove('out');
     }, 1200);
   }, 14000);
-  driftTimer = setInterval(() => {
-    const x = Math.round(Math.random() * 160 - 80);
-    const y = Math.round(Math.random() * 120 - 60);
-    drift.style.transform = `translate(${x}px, ${y}px)`;
-  }, 45000);
   artSession++;
   if (settings.ambientStyle === 'art') void startArt(artSession);
 }
 
 export function stopAmbient(): void {
   clearInterval(lineTimer);
-  clearInterval(driftTimer);
   clearTimeout(artTimer);
   artSession++;
   prepared = null;
