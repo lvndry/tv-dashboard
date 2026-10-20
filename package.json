@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "pkg": "node tools/mkpkg.js",
     "deploy": "node tools/mkpkg.js && node tools/install.js",
-    "screenshots": "node tools/screenshots.js"
+    "screenshots": "node tools/screenshots.js",
+    "watchdog": "node tools/watchdog-check.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",

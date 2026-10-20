@@ -9,6 +9,7 @@ import { accents, artIntervals, idleChoices, settings, updateSettings } from '..
 import { currentLocation, saveLocation, searchPlaces, type PlaceResult } from '../location';
 import { refreshWeather } from '../data';
 import { relativeAge } from '../time';
+import { reset as resetWatchdog, strikes } from '../watchdog';
 import type { View } from './view';
 
 declare const __BUILD_TIME__: string;
@@ -219,6 +220,17 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
       label: 'PS5 input',
       value: () => `HDMI ${settings.ps5Port}`,
       change: step => updateSettings({ ps5Port: cycle([1, 2, 3, 4], settings.ps5Port, step) }),
+    },
+    {
+      label: 'Startup watchdog',
+      value: () => {
+        const n = strikes();
+        return n === 0 ? 'healthy' : `${n} bad start${n === 1 ? '' : 's'} in the last 10 min`;
+      },
+      activate: () => {
+        resetWatchdog();
+        toast('Watchdog cleared — Bonsoir will boot normally');
+      },
     },
     {
       label: 'Refresh everything now',

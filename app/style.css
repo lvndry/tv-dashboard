@@ -463,3 +463,13 @@ body.hdmi #stage > :not(.toast) { visibility: hidden; }
 .vposter .hero { margin-bottom: 0; }
 .vplay.big { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 110px; height: 110px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 44px; color: var(--ink); background: var(--marker); box-shadow: 0 20px 60px rgba(0, 0, 0, .5); }
 
+
+/* Watchdog fallback — shown when the app has to step aside, then the TV's
+   launcher takes over. */
+.watchdog-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, var(--night) 0%, var(--night-deep) 100%); }
+.watchdog-card { max-width: 720px; padding: 44px 56px; text-align: center; border: 1px solid var(--rule); border-radius: 22px; background: rgba(27, 33, 56, .55); }
+.watchdog-card h1 { font-family: var(--serif); font-weight: 500; font-size: 40px; line-height: 1.15; margin: 0 0 20px; color: var(--paper); }
+.watchdog-card p { font-family: var(--sans); font-size: 22px; line-height: 1.5; margin: 0 0 16px; color: var(--paper-soft); }
+.watchdog-reason { color: var(--marker) !important; font-style: italic; }
+.watchdog-hint { color: var(--paper-dim) !important; font-size: 20px !important; margin-bottom: 0 !important; }
+
