@@ -5,3 +5,4 @@ app/dist/
 .env
 app/config.ts
 design/
+firmware/
