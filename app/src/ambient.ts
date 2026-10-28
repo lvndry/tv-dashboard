@@ -31,6 +31,7 @@ function ambientLines(): string[] {
 let lineIndex = 0;
 let lineTimer: ReturnType<typeof setInterval> | undefined;
 let artTimer: ReturnType<typeof setTimeout> | undefined;
+let driftTimer: ReturnType<typeof setInterval> | undefined;
 let artSession = 0;
 let frontFrame = 0;
 let prepared: Promise<LoadedArtwork | null> | null = null;
@@ -40,11 +41,7 @@ function showArtwork(work: LoadedArtwork): void {
   const incoming = frames[1 - frontFrame]!;
   const outgoing = frames[frontFrame]!;
   const url = escapeHtml(work.image);
-  const panX = Math.round(Math.random() * 6 - 3);
-  const panY = Math.round(Math.random() * 4 - 2);
   incoming.className = 'art-frame framed';
-  incoming.style.setProperty('--pan-x', `${panX}%`);
-  incoming.style.setProperty('--pan-y', `${panY}%`);
   incoming.style.setProperty('--art-duration', `${settings.artSeconds + 10}s`);
   incoming.innerHTML = `<img class="art-backdrop" src="${escapeHtml(work.thumb || work.image)}" alt=""><img class="art-image" src="${url}" alt="">`;
   void incoming.offsetWidth;
@@ -100,6 +97,7 @@ export function prepareAmbient(): void {
 
 export function startAmbient(): void {
   const line = byId('aline');
+  const drift = byId('drift');
   const lines = ambientLines();
   lineIndex = lineIndex % lines.length;
   line.textContent = lines[lineIndex] ?? '';
@@ -107,6 +105,7 @@ export function startAmbient(): void {
   document.body.classList.add('ambient');
   document.body.classList.toggle('ambient-art', settings.ambientStyle === 'art');
   clearInterval(lineTimer);
+  clearInterval(driftTimer);
   lineTimer = setInterval(() => {
     line.classList.add('out');
     setTimeout(() => {
@@ -116,12 +115,21 @@ export function startAmbient(): void {
       line.classList.remove('out');
     }, 1200);
   }, 14000);
+  drift.style.transform = '';
+  if (config.burnInShift) {
+    driftTimer = setInterval(() => {
+      const x = Math.round(Math.random() * 160 - 80);
+      const y = Math.round(Math.random() * 120 - 60);
+      drift.style.transform = `translate(${x}px, ${y}px)`;
+    }, 45000);
+  }
   artSession++;
   if (settings.ambientStyle === 'art') void startArt(artSession);
 }
 
 export function stopAmbient(): void {
   clearInterval(lineTimer);
+  clearInterval(driftTimer);
   clearTimeout(artTimer);
   artSession++;
   prepared = null;
