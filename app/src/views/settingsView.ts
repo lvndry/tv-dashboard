@@ -9,6 +9,7 @@ import { accents, artIntervals, idleChoices, settings, updateSettings } from '..
 import { currentLocation, saveLocation, searchPlaces, type PlaceResult } from '../location';
 import { refreshWeather } from '../data';
 import { relativeAge } from '../time';
+import { reset as resetWatchdog, strikes } from '../watchdog';
 import type { View } from './view';
 
 declare const __BUILD_TIME__: string;
@@ -195,9 +196,9 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
     },
     {
       label: 'New artwork every',
-      value: () => settings.artSeconds < 60 ? `${settings.artSeconds} s` : `${settings.artSeconds / 60} min`,
+      value: () => settings.artSeconds < 60 ? `${settings.artSeconds} s` : settings.artSeconds < 3600 ? `${settings.artSeconds / 60} min` : settings.artSeconds < 86400 ? `${settings.artSeconds / 3600} h` : '24 h',
       change: step => updateSettings({ artSeconds: cycle(artIntervals, settings.artSeconds, step) }),
-      note: () => 'In ambient mode and the gallery slideshow.',
+      note: () => 'In ambient mode and the gallery slideshow. 24 h keeps a single work up a whole day.',
     },
     {
       label: 'Gallery slideshow',
@@ -219,6 +220,17 @@ export function createSettingsView(close: () => void, onChange: () => void): Vie
       label: 'PS5 input',
       value: () => `HDMI ${settings.ps5Port}`,
       change: step => updateSettings({ ps5Port: cycle([1, 2, 3, 4], settings.ps5Port, step) }),
+    },
+    {
+      label: 'Startup watchdog',
+      value: () => {
+        const n = strikes();
+        return n === 0 ? 'healthy' : `${n} bad start${n === 1 ? '' : 's'} in the last 10 min`;
+      },
+      activate: () => {
+        resetWatchdog();
+        toast('Watchdog cleared — Bonsoir will boot normally');
+      },
     },
     {
       label: 'Refresh everything now',

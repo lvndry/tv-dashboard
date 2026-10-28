@@ -1,5 +1,5 @@
 import { artReady, regions, favouriteWorks, galleryWorks, isFavourite, loadArtwork, toggleFavourite, type Artwork, type Region } from '../art';
-import { captionHtml, fillsScreen } from '../artCaption';
+import { captionHtml } from '../artCaption';
 import { artDetails, cachedDetails } from '../artDetails';
 import { byId, escapeHtml, toast } from '../dom';
 import type { Action } from '../platform';
@@ -152,7 +152,7 @@ export function createGalleryView(close: () => void): View {
     const incoming = frames[1 - viewerFront]!;
     const outgoing = frames[viewerFront]!;
     const url = escapeHtml(loaded.image);
-    incoming.className = `art-frame ${fillsScreen(loaded.width, loaded.height) ? 'fill' : 'framed'}`;
+    incoming.className = 'art-frame framed';
     incoming.style.setProperty('--art-duration', `${settings.artSeconds + 10}s`);
     incoming.style.setProperty('--pan-x', '0%');
     incoming.style.setProperty('--pan-y', '0%');
@@ -212,7 +212,8 @@ export function createGalleryView(close: () => void): View {
         }
       } else if (action === 'down') {
         updateSettings({ slideshow: !settings.slideshow });
-        toast(settings.slideshow ? `Slideshow on: a new work every ${settings.artSeconds < 60 ? `${settings.artSeconds} s` : `${settings.artSeconds / 60} min`}` : 'Slideshow off');
+        const interval = settings.artSeconds < 60 ? `${settings.artSeconds} s` : settings.artSeconds < 3600 ? `${settings.artSeconds / 60} min` : settings.artSeconds < 86400 ? `${settings.artSeconds / 3600} h` : '24 h';
+        toast(settings.slideshow ? `Slideshow on: a new work every ${interval}` : 'Slideshow off');
         scheduleNext();
       } else if (action === 'back' || action === 'up') closeViewer();
       return true;

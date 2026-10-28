@@ -6,10 +6,11 @@ import { data, onDataChange, refreshAll, refreshConnection, refreshStale } from 
 import { byId, toast, watchImages } from './dom';
 import { initApps, onInputRequested, onShortcutRequested } from './launcher';
 import { autoDetectLocation, currentLocation } from './location';
-import { actionFor, exitApp, hideHdmi, isTizen, registerRemoteKeys, showHdmi, type Action } from './platform';
+import { actionFor, exitApp, hideHdmi, isTizen, registerRemoteKeys, holdSystemScreenSaver, showHdmi, type Action } from './platform';
 import { settings } from './store';
 import { clockParts, dateLabel, relativeAge, timeLabel, zoned } from './time';
 import { condition } from './weather';
+import { arm, markDrew } from './watchdog';
 import { createHome } from './views/home';
 import { createGalleryView } from './views/galleryView';
 import { createWhatsOnView } from './views/whatsOnView';
@@ -28,6 +29,13 @@ function fitStage(): void {
 
 function applyAccent(): void {
   document.documentElement.style.setProperty('--marker', settings.accent);
+}
+
+// A broken build must not trap the user on a blank set: if Bonsoir has failed
+// to start a few times in a row, the watchdog hands the screen back before we
+// draw anything. Everything below only runs if this start is safe to boot.
+if (arm()) {
+  throw new Error('watchdog took over');
 }
 
 let current: 'home' | 'news' | 'gallery' | 'whatson' = 'home';
@@ -243,9 +251,11 @@ watchImages();
 fitStage();
 applyAccent();
 registerRemoteKeys();
+holdSystemScreenSaver();
 scheduleClock();
 renderDateline();
 home.render();
+markDrew(); // the home view drew — this start was a success, clear any strikes
 showView('home');
 void initApps().then(() => home.render());
 void autoDetectLocation().then(() => refreshConnection()).then(refreshStale);

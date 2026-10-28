@@ -1,6 +1,6 @@
 import { config } from '../config';
 import { nextArtwork, type LoadedArtwork } from './art';
-import { captionHtml, fillsScreen } from './artCaption';
+import { captionHtml } from './artCaption';
 import { artDetails, cachedDetails } from './artDetails';
 import { data } from './data';
 import { shortPlace } from './location';
@@ -30,8 +30,8 @@ function ambientLines(): string[] {
 
 let lineIndex = 0;
 let lineTimer: ReturnType<typeof setInterval> | undefined;
-let driftTimer: ReturnType<typeof setInterval> | undefined;
 let artTimer: ReturnType<typeof setTimeout> | undefined;
+let driftTimer: ReturnType<typeof setInterval> | undefined;
 let artSession = 0;
 let frontFrame = 0;
 let prepared: Promise<LoadedArtwork | null> | null = null;
@@ -41,7 +41,7 @@ function showArtwork(work: LoadedArtwork): void {
   const incoming = frames[1 - frontFrame]!;
   const outgoing = frames[frontFrame]!;
   const url = escapeHtml(work.image);
-  incoming.className = `art-frame ${fillsScreen(work.width, work.height) ? 'fill' : 'framed'}`;
+  incoming.className = 'art-frame framed';
   incoming.style.setProperty('--art-duration', `${settings.artSeconds + 10}s`);
   incoming.innerHTML = `<img class="art-backdrop" src="${escapeHtml(work.thumb || work.image)}" alt=""><img class="art-image" src="${url}" alt="">`;
   void incoming.offsetWidth;

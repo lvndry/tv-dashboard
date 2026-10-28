@@ -129,8 +129,21 @@ export function artQueryResult() {
         creatorLabel: { value: 'Théodore Géricault' },
         image: { value: 'http://commons.wikimedia.org/wiki/Special:FilePath/JEAN%20LOUIS%20TH%C3%89ODORE%20G%C3%89RICAULT%20-%20La%20Balsa%20de%20la%20Medusa%20%28Museo%20del%20Louvre%2C%201818-19%29.jpg' },
         inception: { value: '1819-01-01T00:00:00Z' },
+        sitelinks: { enwiki: { title: 'The Raft of the Medusa' } },
+        descriptions: { en: { value: 'oil on canvas by Théodore Géricault' } },
       }],
     },
+  };
+}
+
+/** The opening section Wikipedia would return for the fixture painting. */
+export function wikipediaExtract() {
+  return {
+    query: { pages: { '1': {
+      extract: ['The Raft of the Medusa is an 1818–19 oil on canvas painting by the French artist Théodore Géricault. It is one of the largest works of art in the collection of the Musée du Louvre in Paris, where it is displayed in a dedicated room.',
+      'The painting was inspired by the wreck of the French frigate Méduse, a naval disaster that became a scandal because of the incompetence of the appointee captain.'].join('\n'),
+      fullurl: 'https://en.wikipedia.org/wiki/The_Raft_of_the_Medusa',
+    } } },
   };
 }
 

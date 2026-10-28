@@ -10,12 +10,16 @@
     "typecheck": "tsc --noEmit",
     "pkg": "node tools/mkpkg.js",
     "deploy": "node tools/mkpkg.js && node tools/install.js",
-    "screenshots": "node tools/screenshots.js"
+    "screenshots": "node tools/screenshots.js",
+    "watchdog": "node tools/watchdog-check.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2"
   },
   "type": "module",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "qrcode-generator": "^2.0.4"
+  }
 }

@@ -9,7 +9,7 @@ export const accents = [
 export const idleChoices = [0, 1, 2, 3, 5, 10, 15, 30];
 
 /** Seconds each artwork stays on screen, in ambient mode and the gallery slideshow. */
-export const artIntervals = [30, 60, 120, 300, 600];
+export const artIntervals = [15, 30, 60, 120, 300, 900, 1800, 3600, 86400];
 
 export interface SavedLocation {
   name: string;

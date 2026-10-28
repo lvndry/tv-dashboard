@@ -374,10 +374,6 @@ body.ambient-art .glow { display: none; }
 .art-frame { position: absolute; inset: 0; overflow: hidden; opacity: 0; transition: opacity 2.8s var(--ease-io); }
 .art-frame.visible { opacity: 1; }
 .art-frame img { position: absolute; display: block; }
-.art-frame.fill .art-backdrop { display: none; }
-.art-frame.fill .art-image {
-  inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: brightness(.8) saturate(.95);
-}
 .art-frame.framed .art-backdrop {
   left: -60px; top: -60px; width: calc(100% + 120px); height: calc(100% + 120px); object-fit: cover;
   filter: blur(26px) brightness(.32) saturate(1.15);
@@ -412,6 +408,9 @@ body.ambient-art .acaption.out { opacity: 0; }
 .asource { margin-top: 16px; font-size: 15px; color: var(--paper-faint); letter-spacing: .04em; }
 .viewer .acaption { top: 140px; bottom: 80px; max-width: 620px; display: flex; flex-direction: column; justify-content: flex-end; }
 .viewer .astory { display: block; -webkit-line-clamp: unset; overflow: visible; font-size: 22px; }
+.aqrcode { display: flex; align-items: center; gap: 22px; margin-top: 28px; padding: 18px 22px; border: 1px solid rgba(242,240,230,.16); background: rgba(14,18,32,.45); border-radius: 14px; width: fit-content; }
+.aqrcode .qrcode { width: 108px; height: 108px; display: block; flex: none; }
+.aqrcode-label { font-size: 18px; color: var(--paper-soft); line-height: 1.4; max-width: 260px; }
 
 /* HDMI passthrough: the TV window sits behind a transparent page */
 body.hdmi, body.hdmi #stage, html:has(body.hdmi) { background: transparent !important; }
@@ -463,4 +462,14 @@ body.hdmi #stage > :not(.toast) { visibility: hidden; }
 .vposter { position: relative; }
 .vposter .hero { margin-bottom: 0; }
 .vplay.big { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 110px; height: 110px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 44px; color: var(--ink); background: var(--marker); box-shadow: 0 20px 60px rgba(0, 0, 0, .5); }
+
+
+/* Watchdog fallback — shown when the app has to step aside, then the TV's
+   launcher takes over. */
+.watchdog-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, var(--night) 0%, var(--night-deep) 100%); }
+.watchdog-card { max-width: 720px; padding: 44px 56px; text-align: center; border: 1px solid var(--rule); border-radius: 22px; background: rgba(27, 33, 56, .55); }
+.watchdog-card h1 { font-family: var(--serif); font-weight: 500; font-size: 40px; line-height: 1.15; margin: 0 0 20px; color: var(--paper); }
+.watchdog-card p { font-family: var(--sans); font-size: 22px; line-height: 1.5; margin: 0 0 16px; color: var(--paper-soft); }
+.watchdog-reason { color: var(--marker) !important; font-style: italic; }
+.watchdog-hint { color: var(--paper-dim) !important; font-size: 20px !important; margin-bottom: 0 !important; }
 

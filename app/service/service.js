@@ -6,7 +6,7 @@ var fs = require('fs');
 // `tizen` is a runtime global binding in web services; `this.tizen` is undefined at module top level.
 
 var APP_ID = 'BonsoirTV1.Bonsoir';
-var TRACE = '/home/owner/share/tmp/bonsoir-boot.json';
+var TRACE = '/home/owner/share/tmp/bonsoir-boot-trace.json';
 
 function trace(extra) {
   var state = {};
