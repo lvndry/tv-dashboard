@@ -31,9 +31,3 @@ export async function writeBig<T>(key: string, value: T): Promise<void> {
   const db = await database();
   await request(db.transaction(storeName, 'readwrite').objectStore(storeName).put(value, key));
 }
-
-export async function keysWithPrefix(prefix: string): Promise<string[]> {
-  const db = await database();
-  const keys = await request(db.transaction(storeName, 'readonly').objectStore(storeName).getAllKeys());
-  return keys.map(String).filter(key => key.startsWith(prefix));
-}

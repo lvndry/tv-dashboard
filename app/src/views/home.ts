@@ -11,7 +11,7 @@ import type { Story } from '../news';
 import { interest, isToday, type Match } from '../sports';
 import type { Action } from '../platform';
 import { lastLaunch, settings } from '../store';
-import { relativeAge, timeLabel, weekdayShort, zoned } from '../time';
+import { hourLabel, relativeAge, timeLabel, weekdayShort, zoned } from '../time';
 import { aheadPhrase, condition, rainOutlook, rainPhrase, upcomingHours, windFrom, type Weather } from '../weather';
 import type { View } from './view';
 
@@ -61,7 +61,7 @@ function hourStrip(weather: Weather): string {
     <div class="col">
       <b>${hour.temp}°</b>
       <div class="bar"><i style="height:${Math.max(4, Math.round(hour.precipProbability * 0.7))}px" class="${hour.precipProbability >= 40 ? 'wet' : ''}"></i></div>
-      <span>${hour.time === hours[0]?.time ? 'Now' : timeLabel(hour.time).slice(0, 2) + 'h'}</span>
+      <span>${hour.time === hours[0]?.time ? 'Now' : hourLabel(hour.time)}</span>
     </div>`).join('')}</div>`;
 }
 
@@ -84,7 +84,7 @@ function rainNote(weather: Weather): string {
     <div class="rain">${hours.map((hour, index) => `
       <div class="rcol">
         <div class="rbar"><i class="prob" style="height:${hour.precipProbability}%"></i><i class="mm" style="height:${Math.round(hour.precip / peak * 100)}%"></i></div>
-        <span>${index % 3 === 0 ? timeLabel(hour.time).slice(0, 2) + 'h' : ''}</span>
+        <span>${index % 3 === 0 ? hourLabel(hour.time) : ''}</span>
       </div>`).join('')}</div>
     <div class="legend"><span><i class="prob"></i>chance</span><span><i class="mm"></i>amount</span></div>`;
 }
@@ -141,7 +141,7 @@ function allNewsNote(): string {
 
 const shortcutDetail = {
   whatson: 'Football fixtures and live scores, and the week’s major events in Paris.',
-  news: 'Every headline, by section, with the ChatGPT brief when it’s connected.',
+  news: 'Every headline, by section, with the AI brief when it’s on.',
   gallery: 'About 2,800 public-domain works, from ancient Egypt to Romanticism. Favourites come up more often in ambient mode.',
   settings: 'ChatGPT, ambient mode, highlighter colour, clock and console input.',
 };

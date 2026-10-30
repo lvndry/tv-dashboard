@@ -9,7 +9,7 @@ The look is the Bonsoir theme: ink-blue night, paper-coloured serif text, and a 
 | | |
 | --- | --- |
 | ![A news story focused in the letter, with its summary in the margin](docs/screenshots/home-story.png) | ![The News view on the Brief tab, with a story list and a detail pane](docs/screenshots/news.png) |
-| **Focus a phrase** and the margin explains it: a story's summary, an hourly forecast, the week ahead. | **News** groups the day's headlines by section, with an AI-written brief when ChatGPT is connected. |
+| **Focus a phrase** and the margin explains it: a story's summary, an hourly forecast, the week ahead. | **News** groups the day's headlines by section, with an AI-written brief when a Perplexity key is set. |
 | ![Pairing ChatGPT with a code shown on the TV](docs/screenshots/pairing.png) | ![Ambient mode: The Raft of the Medusa fills the screen, with the clock and a caption on the left](docs/screenshots/ambient.png) |
 | **Connect ChatGPT** by entering a code on your phone. The sign-in goes straight to the TV and is stored there encrypted. | **Ambient mode** turns the TV into a gallery when the remote is idle: public-domain art from ancient Egypt to Romanticism. |
 
@@ -56,7 +56,7 @@ News and Settings sit at the end of the rack along the bottom, so every remote c
 - `sports`: the leagues to follow (ESPN ids such as `fra.1`, `eng.1`, `esp.1`, `uefa.champions`) and your teams, whose matches come first.
 - `parisEvents`: the City of Paris's picks of the week's major events, for Paris.
 - `art`: where ambient mode finds its art (see below).
-- `brief`: the ChatGPT model, language and refresh interval for the news brief.
+- `brief`: the Perplexity API key and model, the language and the refresh interval for the news brief.
 
 Ambient delay, artwork interval, gallery slideshow, highlighter colour, clock format, console HDMI port, the ChatGPT connection and the weather location are set on the TV itself, in Settings. For the weather location, type a neighbourhood, town or postcode with the TV keyboard and pick the match; it's saved on the TV and overrides `place`, `latitude` and `longitude` from the config.
 
@@ -68,7 +68,7 @@ Football comes from ESPN's public scoreboard feed, refreshed hourly and every mi
 
 ## Art in ambient mode
 
-When the remote has been idle, the TV becomes a gallery: one public-domain work at a time, from ancient Egypt to Romanticism (up to 1850), changing every few minutes. Paintings fill the screen with a slow pan; statues and objects are shown whole, lit against a blurred copy of themselves. The caption gives the title, artist or culture, date and museum.
+When the remote has been idle, the TV becomes a gallery: one public-domain work at a time, from ancient Egypt to Romanticism (up to 1850), changing every few minutes. Every work is shown whole on the right, lit against a blurred copy of itself, with its caption and story on the left. The caption gives the title, artist or culture, date and museum.
 
 The collection is about 2,800 works, gathered without any API key:
 
@@ -81,19 +81,23 @@ To browse the collection, open **Gallery** from the rack: a chronological grid w
 
 Add or remove museums in `art.museums` (any museum with a Wikidata id works), move `art.from` and `art.until` to change the period (3500 BCE to 1850 by default), or switch to the plain clock in Settings → Ambient style. The list is fetched once a week and cached on the TV.
 
-## AI news brief (ChatGPT)
+## AI news brief (Perplexity)
 
-The News view can open on a brief: your ChatGPT plan groups the headlines from every feed into 6 to 8 stories, each with a short summary and its sources. The letter then uses those short phrasings too. There's no API key and no per-use billing; it runs on the plan's own limits. Until the TV is connected, everything works from the raw feeds.
+The News view can open on a brief: Perplexity groups the headlines from every feed into 6 to 8 stories, each with a short summary and its sources. The letter then uses those short phrasings too. It needs a Perplexity API key in `app/config.ts` (`brief.perplexityKey`), billed per request by Perplexity; Settings → AI news brief turns it off. Without a key, everything works from the raw feeds. While Perplexity Discover's top stories are available, the letter and the News view use those instead.
 
-To connect, open Settings from the rack, choose ChatGPT and press OK. The TV shows a code; open `auth.openai.com/codex/device` on your phone, sign in and enter it.
+The key is compiled into the app bundle, so it sits in `app/dist` and the `.wgt`. `app/config.ts` is gitignored; keep the package to yourself.
+
+## Gallery stories (ChatGPT)
+
+ChatGPT retells the gallery's artwork stories, on your ChatGPT plan's own limits with no API key. To connect, open Settings from the rack, choose ChatGPT and press OK. The TV shows a code; open `auth.openai.com/codex/device` on your phone, sign in and enter it.
 
 How the sign-in is protected:
 
-- Nothing secret is in the source, the build, the `.wgt` or git. The tokens go from OpenAI straight to the TV when you approve the code.
+- No ChatGPT secret is in the source, the build, the `.wgt` or git. The tokens go from OpenAI straight to the TV when you approve the code.
 - Only the refresh token is stored, encrypted with AES-GCM under a key the TV generates as non-extractable, so app code can use it but can never read it out. The access token stays in memory and expires within the hour.
 - Refresh tokens rotate on every use, and the old one stops working.
 - A Content-Security-Policy, generated at build time, limits outgoing requests to the weather API, OpenAI and the feeds in `config.ts`, and blocks inline scripts.
-- Headlines are sent as data with no tools attached, and the reply is validated before anything is shown.
+- Artwork records are sent as data with no tools attached, and the reply is validated before anything is shown.
 - Settings → ChatGPT → OK twice disconnects and wipes the key and tokens. To revoke from elsewhere, use chatgpt.com → Settings → Security → "Log out of all devices".
 
 What this can't stop: someone who can run code inside the app (developer mode, `sdb` or root on the TV) could ask it to decrypt the token. Even then they get your plan's usage, not billing access.
