@@ -22,15 +22,15 @@ git clone https://github.com/lvndry/tv-dashboard.git && cd tv-dashboard
 bun install        # also creates app/config.ts from app/config.example.ts
 ```
 
-Edit `app/config.ts` for your city, feeds and apps (see Configuration below), then follow [docs/setup.md](docs/setup.md) once to get your TV into Developer Mode with the homebrew installer, and copy `.env.example` to `.env` with your TV's address.
+Edit `app/config.ts` for your city, feeds and apps (see Configuration below), then follow [docs/setup.md](docs/setup.md) once to install [Tizen Tap](https://github.com/lvndry/tizen-tap) on your TV, and copy `.env.example` to `.env` with your TV's address.
 
 ## Commands
 
 ```sh
 bun run dev        # preview at http://localhost:5173 with live rebuilds
 bun run typecheck
-bun run pkg        # build and sign app/dist/tv-dashboard.wgt
-bun run deploy     # pkg, then install on the TV through the homebrew service
+bun run pkg        # build app/dist/tv-dashboard.wgt (signed when tizenjs is around)
+bun run deploy     # pkg, then install on the TV through Tizen Tap
 bun run screenshots  # regenerate docs/screenshots with fictional data (needs Google Chrome)
 ```
 

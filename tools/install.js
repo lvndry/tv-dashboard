@@ -1,32 +1,54 @@
-// Install the wgt onto the TV via the homebrew service.
-// Values come from the environment, then .env / .env.local (env vars win).
-import { readFileSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+// Install app/dist/tv-dashboard.wgt on the TV through the Tizen Tap service.
+// Values come from the environment, then .env.local and .env (the environment wins).
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { loadEnv, root } from './env.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const root = join(__dirname, '..');
-for (const name of ['.env', '.env.local']) {
-  const file = join(root, name);
-  if (!existsSync(file)) continue;
-  for (const line of readFileSync(file, 'utf8').split('\n')) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
-    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
-  }
+loadEnv();
+
+const host = process.env.TV_HOST;
+const port = process.env.TV_PORT || '8091';
+const pin = process.env.TV_PIN || '000000';
+
+function fail(message) {
+  console.error(`✗ ${message}`);
+  process.exit(1);
 }
 
-const host = process.env.TV_HOST ?? '192.168.1.119';
-const port = process.env.TV_PORT ?? '8091';
-const pin = process.env.TV_PIN ?? '000000';
+if (!host) fail('TV_HOST is not set. Copy .env.example to .env and put the TV\'s IP address in it.');
 
 const wgtPath = join(root, 'app', 'dist', 'tv-dashboard.wgt');
-if (!existsSync(wgtPath)) { console.error(`no package at ${wgtPath} — run "bun run pkg" first`); process.exit(1); }
-const wgt = readFileSync(wgtPath);
-console.log(`→ ${host}:${port}`);
-const res = await fetch(`http://${host}:${port}/install`, {
-  method: 'POST',
-  headers: { 'x-homebrew-pin': pin, 'x-homebrew-name': 'tv-dashboard.wgt', 'Content-Type': 'application/octet-stream' },
-  body: wgt,
-});
-console.log('HTTP', res.status);
-console.log(await res.text());
+if (!existsSync(wgtPath)) fail(`no package at ${wgtPath}. Run "bun run pkg" first.`);
+
+const pinHelp = 'Read the 6-digit PIN off the Tizen Tap screen on the TV and set TV_PIN in .env (developer builds of Tizen Tap use 000000).';
+
+console.log(`→ installing on ${host}:${port}`);
+let response;
+try {
+  response = await fetch(`http://${host}:${port}/install`, {
+    method: 'POST',
+    headers: { 'x-homebrew-pin': pin, 'x-homebrew-name': 'tv-dashboard.wgt', 'Content-Type': 'application/octet-stream' },
+    body: readFileSync(wgtPath),
+    signal: AbortSignal.timeout(180000),
+  });
+} catch (error) {
+  const cause = error?.cause?.code ?? error?.name ?? String(error);
+  fail(`could not reach Tizen Tap at ${host}:${port} (${cause}). Check that the TV is on and Tizen Tap is running, and that TV_HOST is its current IP.`);
+}
+
+const text = await response.text();
+let body = null;
+try { body = JSON.parse(text); } catch { /* not JSON: shown raw below */ }
+const detail = body?.message ?? text.trim();
+
+if (response.ok && body?.ok !== false) {
+  console.log(`✓ installed${body?.packageId ? ` ${body.packageId}` : ''}`);
+  for (const phase of body?.phases ?? []) console.log(`  · ${phase}`);
+  process.exit(0);
+}
+
+const seconds = detail.match(/(\d+)\s*s\b/)?.[1];
+if (response.status === 403) fail(`Tizen Tap refused the PIN in TV_PIN. ${pinHelp} Five wrong tries lock installs for five minutes.`);
+if (response.status === 429) fail(`too many wrong PINs: Tizen Tap refuses installs${seconds ? ` for another ${seconds} seconds` : ' for a few minutes'}. Wait that long before trying again. ${pinHelp}`);
+if (response.status === 409 || /already running/i.test(detail)) fail('another install is running on the TV. Wait for it to finish, then run "bun run deploy" again.');
+fail(`HTTP ${response.status}: ${detail}${body?.remedy ? `\n  ${body.remedy}` : ''}`);
