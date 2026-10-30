@@ -196,15 +196,17 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
       <div class="ok"><kbd>OK</kbd>Read the full article here</div>`;
   }
 
+  /** The open article owns the pane; openReader and its Back key draw it, so refreshes leave it alone. */
   function renderDetail(force = false): void {
+    if (readerFor) return;
     const item = items()[listIndex];
     const key = item
-      ? `${item.kind}:${item.kind === 'brief' ? item.story.headline : item.kind === 'video' ? item.video.id : item.story.id}:${zone === 'sources'}:${readerFor?.id ?? ''}`
+      ? `${item.kind}:${item.kind === 'brief' ? item.story.headline : item.kind === 'video' ? item.video.id : item.story.id}:${zone === 'sources'}`
       : 'none';
     if (!force && key === detailKey) return;
-    const sameStory = detailKey.split(':').slice(0, 2).join(':') === key.split(':').slice(0, 2).join(':') && detailKey.endsWith(`:${readerFor?.id ?? ''}`);
+    const sameStory = detailKey.split(':').slice(0, 2).join(':') === key.split(':').slice(0, 2).join(':');
     detailKey = key;
-    if (sameStory && !readerFor) {
+    if (sameStory) {
       if (item) detailNode.innerHTML = detailHtml(item);
       return;
     }
@@ -244,6 +246,7 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
     sourceNodes.forEach((node, index) => node.classList.toggle('on', zone === 'sources' && index === sourceIndex));
     element.dataset.zone = zone;
     detailNode.classList.toggle('focused', zone === 'detail');
+    detailNode.classList.toggle('reading', !!readerFor);
   }
 
   /** The article pane scrolls when it has focus; the remote's ▲ ▼ move it a screenful at a time. */
@@ -315,6 +318,7 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
       const message = error instanceof Error ? error.message : String(error);
       toast(`Couldn't read the article (${message}). Opening on ${hostOf(story.link)} instead…`, 'error');
       readerFor = null;
+      detailKey = '';
       zone = 'list';
       applyFocus();
       try { await openUrl(story.link); } catch { /* no browser handler on the TV */ }

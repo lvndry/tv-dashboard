@@ -691,7 +691,7 @@ export async function nextArtwork(attempts = 6): Promise<LoadedArtwork | null> {
   if (!galleryWorks().length && ![...states.values()].some(state => state.lazyIds?.length)) await refreshing;
   for (let attempt = 0; attempt < attempts; attempt++) {
     const work = await candidate();
-    if (!work) return null;
+    if (!work) continue;
     try {
       const size = await loadImage(work.image);
       remember(work);

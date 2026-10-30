@@ -23,6 +23,8 @@ const THRESHOLD = 3;
 const WINDOW_MS = 10 * 60 * 1000;
 /** If the home view has not drawn within this long, the start counts as a hang. */
 const DRAW_TIMEOUT_MS = 20 * 1000;
+/** How long the fallback message stays up before the app exits. */
+const EXIT_DELAY_MS = 8 * 1000;
 
 function read(): Strikes {
   try {
@@ -96,7 +98,7 @@ export function showFallback(reason: string): void {
       '<h1>Bonsoir stepped back</h1>' +
       '<p>It has been unable to start a few times in a row, so it is handing the screen back to the TV.</p>' +
       '<p class="watchdog-reason"></p>' +
-      '<p class="watchdog-hint">The stock launcher is back. A fresh build will bring Bonsoir right back.</p>' +
+      '<p class="watchdog-hint">It closes in a few seconds. A fresh build will bring Bonsoir right back.</p>' +
       '</div>';
     const reasonEl = box.querySelector('.watchdog-reason');
     if (reasonEl) reasonEl.textContent = reason;
@@ -104,12 +106,13 @@ export function showFallback(reason: string): void {
   }
 
   if (armed) {
-    try {
-      const app = (globalThis as any).tizen?.application?.getCurrentApplication?.();
-      app?.terminate?.();
-    } catch {
-      /* not on Tizen, or already gone — the message still shows */
-    }
+    setTimeout(() => {
+      try {
+        (globalThis as any).tizen?.application?.getCurrentApplication?.()?.exit?.();
+      } catch {
+        /* not on Tizen, or already gone: the message still shows */
+      }
+    }, EXIT_DELAY_MS);
   }
 }
 
@@ -127,7 +130,11 @@ export function arm(): boolean {
     return true;
   }
 
+  // A crash usually also misses the draw deadline; one bad start is one strike.
+  let struck = false;
   const hang = (reason: string) => {
+    if (struck || drew) return;
+    struck = true;
     if (recordFailure(reason)) showFallback(reason);
   };
 
@@ -138,12 +145,7 @@ export function arm(): boolean {
   return false;
 }
 
-/** Recent bad-start count, for the settings row. */
+/** Recent bad-start count. */
 export function strikes(): number {
   return recent(read()).at.length;
-}
-
-/** Clear the strike count. */
-export function reset(): void {
-  write({ at: [] });
 }

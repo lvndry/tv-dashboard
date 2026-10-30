@@ -1,7 +1,7 @@
 // Web service that starts at boot and launches the Bonsoir UI app.
 // CommonJS: the Tizen web service runtime uses module.exports.onStart.
-// All state is written to /home/owner/share/tmp/bonsoir-boot.json so it can be
-// read from the homebrew app sandbox (the only shared writable path).
+// Its trace is written to /home/owner/share/tmp/bonsoir-boot-trace.json so it can be
+// read from the Tizen Tap sandbox (the only shared writable path).
 var fs = require('fs');
 // `tizen` is a runtime global binding in web services; `this.tizen` is undefined at module top level.
 
@@ -18,9 +18,10 @@ function trace(extra) {
 
 function alreadyRunning(cb) {
   try {
-    tizen.application.getAppsInfo(function (infos) {
-      for (var i = 0; i < infos.length; i++) {
-        if (infos[i].appId === APP_ID) { cb(true); return; }
+    // getAppsContext lists running apps; getAppsInfo lists installed ones and names them `id`.
+    tizen.application.getAppsContext(function (contexts) {
+      for (var i = 0; i < contexts.length; i++) {
+        if (contexts[i].appId === APP_ID) { cb(true); return; }
       }
       cb(false);
     }, function () { cb(false); });
