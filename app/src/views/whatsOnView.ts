@@ -92,6 +92,15 @@ export function createWhatsOnView(close: () => void): View & { focusOn(target: {
       ${event.url ? '<div class="ok"><kbd>OK</kbd>Open on paris.fr</div>' : ''}`;
   }
 
+  function emptyText(): string {
+    const football = tab === 'football';
+    const status = data.status.get(football ? 'sports' : 'events');
+    const loaded = football ? data.matchesAt : data.eventsAt;
+    if (status?.ok === false) return football ? 'The football scores can’t be reached right now. Settings → Refresh everything now tries again.' : 'Paris’s picks can’t be reached right now. Settings → Refresh everything now tries again.';
+    if (loaded === null) return football ? 'Loading this week’s matches…' : 'Loading this week’s picks…';
+    return football ? 'No matches in your leagues this week.' : 'No picks this week.';
+  }
+
   function renderTabs(): void {
     tabsNode.innerHTML = `<span class="tab-marker" id="whatson-tab-marker"></span>` + tabs().map(item =>
       `<span class="tab" data-focus="whatson-tab" data-tab="${item.id}">${escapeHtml(item.label)}</span>`).join('');
@@ -105,7 +114,7 @@ export function createWhatsOnView(close: () => void): View & { focusOn(target: {
     subtitle.textContent = tab === 'football'
       ? `${config.sports.leagues.map(league => league.name).join(', ')}${updated ? ` · updated ${relativeAge(updated)}` : ''}`
       : `The City of Paris’s picks${updated ? ` · updated ${relativeAge(updated)}` : ''}`;
-    track.innerHTML = list.length ? list.map(rowHtml).join('') : `<div class="empty">${tab === 'football' ? 'No matches this week, or the scores are still loading.' : 'Nothing picked yet, or still loading.'}</div>`;
+    track.innerHTML = list.length ? list.map(rowHtml).join('') : `<div class="empty">${escapeHtml(emptyText())}</div>`;
     applyFocus();
   }
 

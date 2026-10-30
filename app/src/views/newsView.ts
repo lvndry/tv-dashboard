@@ -114,13 +114,21 @@ export function createNewsView(close: () => void): View & { focusTarget(target?:
       `<span class="tab" data-focus="tab" data-index="${index}">${escapeHtml(tab.label)}</span>`).join('');
   }
 
+  function emptyText(): string {
+    if (tabs[tabIndex]?.id === 'videos') return 'No clips right now. YouTube may be slow; try this tab again in a minute.';
+    const feeds = [...data.status.entries()].filter(([key]) => key.startsWith('feed:')).map(([, status]) => status);
+    if (!data.newsAt && feeds.length && feeds.every(status => status.ok === false)) return 'The news feeds can’t be reached right now. Settings → Refresh everything now tries again.';
+    if (!data.newsAt) return 'Fetching the feeds…';
+    return 'No stories here right now.';
+  }
+
   function renderList(): void {
     const list = items();
     if (!list.length) {
       const loading = tabs[tabIndex]?.id === 'brief' && data.briefLoading;
       listTrack.innerHTML = loading
         ? Array.from({ length: 5 }, () => `<div class="row skeleton"><div class="rthumb"></div><div class="rtext"><i></i><i></i></div></div>`).join('')
-        : `<div class="empty">${tabs[tabIndex]?.id === 'videos' ? 'No videos right now — YouTube may be slow.' : 'Nothing here yet.'}</div>`;
+        : `<div class="empty">${escapeHtml(emptyText())}</div>`;
       return;
     }
     listTrack.innerHTML = list.map((item, index) => {
