@@ -28,7 +28,10 @@ function fitStage(): void {
 }
 
 function applyAccent(): void {
-  document.documentElement.style.setProperty('--marker', settings.accent);
+  const root = document.documentElement.style;
+  root.setProperty('--marker', settings.accent);
+  const channels = [1, 3, 5].map(start => parseInt(settings.accent.slice(start, start + 2), 16));
+  root.setProperty('--marker-glow', `rgba(${channels.join(', ')}, .09)`);
 }
 
 // A broken build must not trap the user on a blank set: if Bonsoir has failed
@@ -120,6 +123,7 @@ let hdmiActive = false;
 
 async function enterHdmi(entry: RackEntry): Promise<void> {
   try {
+    document.documentElement.classList.add('hdmi');
     document.body.classList.add('hdmi');
     hdmiActive = true;
     clearTimeout(idleTimer);
@@ -133,6 +137,7 @@ async function enterHdmi(entry: RackEntry): Promise<void> {
 
 async function leaveHdmi(): Promise<void> {
   hdmiActive = false;
+  document.documentElement.classList.remove('hdmi');
   document.body.classList.remove('hdmi');
   await hideHdmi();
   resetIdle();

@@ -22,7 +22,7 @@ function run(body) {
       setItem: (k, v) => { store[k] = String(v); },
     };
     const terminated = { v: false };
-    const tizen = { application: { getCurrentApplication: () => ({ terminate: () => { terminated.v = true; } }) } };
+    const tizen = { application: { getCurrentApplication: () => ({ exit: () => { terminated.v = true; } }) } };
     const listeners = {};
     const window = { addEventListener: (t, f) => { (listeners[t] ??= []).push(f); } };
     const document = {
@@ -68,4 +68,19 @@ console.log('4) strikes older than the 10-min window are ignored:',
     localStorage.setItem('bonsoir.watchdog', JSON.stringify({ at: [old, old+1, old+2] }));
     const a = arm();
     console.log('armReturned=' + a + ' strikes=' + strikes());
+  `));
+
+console.log('5) a crash plus an unhandled rejection in one start is one strike:',
+  run(`
+    arm();
+    for (const listener of [...listeners.error, ...listeners.unhandledrejection]) listener();
+    console.log('strikes=' + strikes());
+    process.exit(0);
+  `));
+
+console.log('6) the fallback exits the app once its message has been up:',
+  run(`
+    arm();
+    showFallback('test');
+    setTimeout(() => { console.log('exited=' + terminated.v); process.exit(0); }, 8500);
   `));

@@ -31,7 +31,7 @@ export async function completeJson(system: string, user: string): Promise<string
     temperature: 0.3,
     max_output_tokens: 2048,
   };
-  const data = await fetchJsonPost<PplxResponse>(ENDPOINT, body, 90000);
+  const data = await fetchJsonPost<PplxResponse>(ENDPOINT, body, 90000, { Authorization: `Bearer ${config.brief.perplexityKey.trim()}` });
   if (data.error) throw new Error(data.error.message ?? 'Perplexity error');
   if (data.status && data.status !== 'completed') throw new Error(`Perplexity ${data.status}`);
   for (const message of data.output ?? []) {

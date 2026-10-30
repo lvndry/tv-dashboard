@@ -121,7 +121,3 @@ export function needsLiveUpdates(matches: Match[], now: number = Date.now()): st
   const active = matches.filter(match => match.state === 'in' || (match.state === 'pre' && match.kickoff - now < 15 * 60000 && match.kickoff - now > -3 * 3600000));
   return Array.from(new Set(active.map(match => match.leagueId)));
 }
-
-export function scoreline(match: Match): string {
-  return match.state === 'pre' ? `${match.home.short}–${match.away.short}` : `${match.home.short} ${match.home.score}–${match.away.score} ${match.away.short}`;
-}

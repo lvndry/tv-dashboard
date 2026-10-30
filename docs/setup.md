@@ -1,11 +1,12 @@
 # Getting the TV talking to your computer
 
-This dashboard installs over the network through a small "homebrew" service
-app that runs on the TV (port 8091). To get that far you need three things:
-the TV's IP, Developer Mode enabled, and the homebrew app installed once.
+This dashboard installs over the network through
+[Tizen Tap](https://github.com/lvndry/tizen-tap), a service app on the TV that
+accepts app installs over HTTP on port 8091 and signs each package with the
+TV's own certificate. To get that far you need two things: the TV's IP, and
+Tizen Tap installed once.
 
-Everything below was done by hand exactly once. After that, the whole loop is
-just `bun run deploy` from this repo.
+After that, the whole loop is `bun run deploy` from this repo.
 
 ## 1. Find the TV's IP
 
@@ -13,69 +14,70 @@ On the TV: **Settings → General → Network → Network Status** (wording vari
 generation; some models bury it under *Settings → Support → Self Diagnosis →
 Network Diagnosis*). The TV's **IP address** is what you put in `TV_HOST`.
 
-It's a fixed address as long as your router keeps handing out the same DHCP
-lease — pin it in your router if you want it to survive reboots. Your
+It stays the same as long as your router keeps handing out the same DHCP
+lease, so pin it in your router if you want it to survive reboots. Your
 computer must be on the same LAN (no guest network).
 
-## 2. Enable Developer Mode
+## 2. Install Tizen Tap (once)
 
-Developer Mode is what grants a computer the "developer" status on the TV.
-It is *not* a normal menu item — Samsung hides it behind a key code.
+Follow the install section of the
+[Tizen Tap README](https://github.com/lvndry/tizen-tap#install). In short:
 
-1. Press **Home** → open the **Apps** panel
-2. Scroll to the very bottom → **App Settings** (a list item, not a gear icon)
-3. Press the small **`123` button** on your remote (the one below the wheel)
-   → an on-screen number keypad appears
-4. Type **`12345`** (slowly — fast taps drop keystrokes)
-5. A gray **Developer Mode** dialog appears with a toggle and an **IP field**
-6. Turn the toggle **On** and set the IP field to **your computer's LAN IP**
-   (not the TV's)
-7. **Unplug the TV's power for 30 seconds and plug it back in**
+1. Open the Developer Mode dialog (**Apps**, then `1` `2` `3` `4` `5` on the
+   remote), turn **Developer mode** on and set **Host PC IP** to your
+   computer's LAN IP.
+2. Unplug the TV for 30 seconds and plug it back in. The TV only reads these
+   settings at a real cold boot; standby does not count.
+3. Run the Tizen Tap installer on your computer. It mints a Samsung
+   certificate for your TV and installs Tizen Tap.
+4. Set **Host PC IP** back to `127.0.0.1` and cold-boot the TV again, so the
+   TV can install its own apps from then on.
 
-That last step is the part everyone misses: the TV's dev daemon only reads the
-settings at a *true* cold boot. Standby doesn't count. After the cold boot,
-the dev channels come up.
+Tizen Tap stays installed across reboots. A Smart Hub reset removes it (and
+this dashboard); repeat this step after one.
 
-Also note the dialog has a 50-hour auto-off: after 50 hours of continuous use
-Developer Mode resets itself and you repeat the ritual. In practice nobody
-notices for months.
+## 3. Get the PIN
 
-You don't need Developer Mode to *run* the dashboard — only to install it
-(and to drive the TV over the Control API).
-
-## 3. Install the homebrew app (once)
-
-The homebrew service (port 8091) is a tiny Tizen app that accepts app installs
-over HTTP. It's the permanent sideload door. It comes from
-[SushyDev/tizen-homebrew](https://github.com/SushyDev/tizen-homebrew), build
-it with `HOMEBREW_DEV=1` so it exposes `/dev/eval`, mint a certificate for
-your TV's DUID (Settings → Support → About This TV), sign, and install it via
-`sdb` (Samsung Device Bridge, the dev daemon behind the cold-boot step).
-
-Once installed, it stays installed across reboots. Its API:
+Every install request carries the Tizen Tap PIN:
 
 ```
 POST http://TV_HOST:8091/install
-x-homebrew-pin: <PIN>          # the dev build ships with 000000
-x-homebrew-name: name.wgt
+x-homebrew-pin: <PIN>
+x-homebrew-name: tv-dashboard.wgt
 Content-Type: application/octet-stream
 <body> raw .wgt bytes
 ```
 
+Open Tizen Tap on the TV: its screen shows the 6-digit PIN. It is created on
+first start and does not change, so you only copy it once. Developer builds
+of Tizen Tap use `000000`. Five wrong PINs in a row lock installs for five
+minutes.
+
 ## 4. This repo
 
 ```sh
-cp .env.example .env           # fill in TV_HOST (+ TV_PIN, TV_PORT if needed)
+cp .env.example .env           # fill in TV_HOST and TV_PIN
 bun install
-bun run deploy                 # build → sign (if TIZENJS set) → push to TV
+bun run deploy                 # build → package → install on the TV
 ```
 
-- **`TV_HOST`** — the TV's IP from step 1
-- **`TV_PORT`** — homebrew service, default `8091`
-- **`TV_PIN`** — homebrew PIN, `000000` on the dev build
-- **`TIZENJS`** — optional path to the Tizen SDK's `tizenjs`. If unset, the
-  package ships unsigned and the homebrew service re-signs it at install time
-  with the certificate you minted in step 3
+- **`TV_HOST`**: the TV's IP from step 1
+- **`TV_PORT`**: Tizen Tap's port, `8091` by default
+- **`TV_PIN`**: the PIN from step 3
+- **`TIZENJS`**: optional path to `tizenjs`, to sign the package locally with
+  the certificates in `~/.tizen-certs`. If unset, `bun run pkg` uses
+  `../tizen-tap/node_modules/.bin/tizenjs` when a tizen-tap checkout sits
+  next to this repo. Without either, the package ships unsigned, which is
+  fine: Tizen Tap re-signs every package with the TV's certificate anyway.
+
+When the install fails, `bun run deploy` says why and exits non-zero:
+
+| Tizen Tap answers | What to do |
+| --- | --- |
+| 403 | The PIN is wrong. Read it off the Tizen Tap screen and fix `TV_PIN`. |
+| 429 | Too many wrong PINs. Wait the number of seconds it reports, then retry with the right PIN. |
+| "An install is already running" | Another install is in progress on the TV. Wait for it, then deploy again. |
+| No answer | The TV is off, or Tizen Tap is not running. Turn the TV on and open Tizen Tap. |
 
 After a deploy the dashboard updates in place. Launch it from the TV's app
 panel (it shows up as *TV Dashboard*), or over the Control API:

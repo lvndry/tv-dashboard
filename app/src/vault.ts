@@ -1,7 +1,7 @@
 // Secrets are sealed with an AES-GCM key generated on this TV as non-extractable:
 // page code can ask the browser to encrypt and decrypt with it, but can never read
-// the key itself. Key and ciphertext live in IndexedDB; nothing secret touches
-// localStorage, the build, or the network except the provider it belongs to.
+// the key itself. Key and ciphertext live in IndexedDB; the sealed secrets never touch
+// localStorage, the build, or the network except the provider they belong to.
 
 const databaseName = 'bonsoir-vault';
 const keyStore = 'keys';

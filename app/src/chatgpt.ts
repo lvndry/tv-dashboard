@@ -81,7 +81,7 @@ async function refresh(): Promise<Session> {
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: current.refresh, client_id: clientId }).toString(),
   }, 15000);
-  if (!response.ok && response.status < 500) {
+  if (response.status === 400 || response.status === 401) {
     await disconnect();
     throw new SignInRequiredError('ChatGPT sign-in expired. Connect again in Settings.');
   }
